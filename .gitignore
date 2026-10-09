@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+secrets/
+
+# Private keys
+*.key
+*.pem
+
+# Runtime data
+runtime/
+uploads/
+logs/
+backups/
+*.log
+
+# Build and test output
+dist/
+coverage/
+
+# Operating system files
+.DS_Store
+Thumbs.db
