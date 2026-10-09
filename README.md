@@ -30,7 +30,13 @@ Toàn bộ dịch vụ được triển khai bằng Docker Compose.
 
 ## Trạng thái
 
-Đang khởi tạo dự án. Chưa triển khai ứng dụng và các dịch vụ.
+Đã tạo server Express cơ bản.
+
+- Trang thử nghiệm tại `/`.
+- Endpoint kiểm tra tiến trình tại `/health/live`.
+- Đường dẫn không tồn tại trả HTTP 404.
+
+Chưa tích hợp MySQL, chức năng nghiệp vụ và các dịch vụ hạ tầng.
 
 ## Môi trường thực hiện
 
@@ -41,7 +47,52 @@ Toàn bộ dịch vụ được triển khai bằng Docker Compose.
 
 ## Hướng dẫn chạy
 
-Sẽ bổ sung sau khi cấu hình triển khai được tạo và kiểm chứng.
+### Chạy bản phát triển trong WSL
+
+Mở terminal tại thư mục dự án.
+
+Chọn phiên bản Node.js:
+
+```bash
+nvm use
+```
+
+Cài dependency từ lockfile:
+
+```bash
+npm ci
+```
+
+Khởi động:
+
+```bash
+npm start
+```
+
+Truy cập: http://localhost:18090
+
+Kiểm tra tiến trình:
+
+```bash
+curl -i http://127.0.0.1:18090/health/live
+```
+
+Kết quả mong đợi: HTTP 200 với JSON báo trạng thái `ok`.
+
+Kiểm tra đường dẫn không tồn tại:
+
+```bash
+curl -i http://127.0.0.1:18090/khong-ton-tai
+```
+
+Kết quả mong đợi: HTTP 404.
+
+Dừng ứng dụng bằng Ctrl + C tại terminal đang chạy server.
+
+Endpoint `/health/live` chỉ kiểm tra khả năng phục vụ HTTP,
+chưa kiểm tra kết nối database.
+
+Hướng dẫn Docker Compose sẽ bổ sung khi triển khai được kiểm chứng.
 
 ## Cấu hình và dữ liệu
 
