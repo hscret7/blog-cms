@@ -7,7 +7,7 @@
 Triển khai website Blog / CMS quản lý bài viết, danh mục và người dùng,
 sử dụng MySQL và phpMyAdmin.
 
-Toàn bộ dịch vụ được triển khai bằng Docker Compose.
+Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker Compose.
 
 ## Phạm vi ứng dụng dự kiến
 
@@ -30,13 +30,20 @@ Toàn bộ dịch vụ được triển khai bằng Docker Compose.
 
 ## Trạng thái
 
-Đã tạo server Express cơ bản.
+Đã hoàn thành nền tảng ứng dụng và database:
 
-- Trang thử nghiệm tại `/`.
-- Endpoint kiểm tra tiến trình tại `/health/live`.
+- Server Express với trang thử nghiệm tại `/`.
+- Endpoint `/health/live` kiểm tra khả năng phục vụ HTTP.
+- Endpoint `/health/ready` kiểm tra kết nối MySQL.
 - Đường dẫn không tồn tại trả HTTP 404.
+- MySQL và phpMyAdmin chạy bằng Docker Compose.
+- Ba bảng nghiệp vụ: `users`, `categories`, `posts`.
+- Express kết nối MySQL bằng connection pool.
+- Đã kiểm tra một số ràng buộc dữ liệu, Unicode và khả năng
+  kết nối lại khi MySQL hoạt động trở lại.
 
-Chưa tích hợp MySQL, chức năng nghiệp vụ và các dịch vụ hạ tầng.
+Chưa triển khai đăng nhập, phân quyền, chức năng quản lý nội dung,
+đóng gói Express bằng Docker, Nginx, giám sát và log tập trung.
 
 ## Môi trường thực hiện
 
@@ -63,9 +70,17 @@ Cài dependency từ lockfile:
 npm ci
 ```
 
+Trước khi chạy Express, cần có `.env` với các biến bắt buộc
+theo `.env.example` và khởi động MySQL:
+
+```bash
+docker compose up -d --wait --wait-timeout 240 mysql
+```
+
 Khởi động:
 
 ```bash
+
 npm start
 ```
 
@@ -161,7 +176,56 @@ Tệp SQL hiện được chạy thủ công; chưa có công cụ theo dõi mig
 Không chạy lại tệp tạo bảng trên database đã có các bảng này.
 
 MySQL, phpMyAdmin và cấu trúc database đã được kiểm chứng.
-Ứng dụng Express chưa kết nối database.
+
+Ứng dụng Express đã kết nối MySQL bằng thư viện `mysql2`,
+sử dụng connection pool.
+
+### Cấu hình kết nối ứng dụng
+
+Khi Express chạy trực tiếp trong WSL, đặt trong `.env`:
+
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=13319
+```
+
+Ứng dụng sử dụng `MYSQL_USER`, `MYSQL_PASSWORD` và
+`MYSQL_DATABASE` từ cấu hình môi trường.
+
+### Kiểm tra sức khỏe ứng dụng
+
+| Endpoint | Ý nghĩa |
+| --- | --- |
+| `/health/live` | Kiểm tra server còn phục vụ HTTP |
+| `/health/ready` | Kiểm tra ứng dụng truy vấn được MySQL |
+
+Kiểm tra:
+
+```bash
+curl -sS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/live
+curl -sS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/ready
+```
+
+Kết quả đã kiểm chứng:
+
+- MySQL hoạt động: cả hai endpoint trả HTTP 200.
+- MySQL dừng: liveness trả HTTP 200, readiness trả HTTP 503.
+- MySQL chạy lại: readiness trở về HTTP 200 mà không cần
+  khởi động lại Express.
+
+Readiness hiện sử dụng `SELECT 1`; chưa kiểm tra đầy đủ
+cấu trúc bảng hoặc các chức năng nghiệp vụ.
+
+### Kiểm tra database đã thực hiện
+
+- Tạo bài nháp với `published_at` bằng NULL: thành công.
+- Xuất bản thiếu thời điểm: bị chặn bởi CHECK constraint.
+- Xuất bản có thời điểm: thành công.
+- Xóa danh mục đang có bài: bị chặn bởi khóa ngoại.
+- Thêm email trùng: bị chặn bởi unique constraint.
+- Rollback: các bản ghi thử không còn tồn tại.
+- Kiểm tra Unicode qua đầu vào không tương tác: tiếng Việt
+  và charset utf8mb4 đúng.
 
 ## Cấu hình và dữ liệu
 

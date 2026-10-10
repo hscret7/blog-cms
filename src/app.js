@@ -1,5 +1,7 @@
 const express = require('express');
 
+const pool = require('./config/database');
+
 const app = express();
 
 app.disable('x-powered-by');
@@ -27,6 +29,34 @@ app.get('/health/live', (req, res) => {
     status: 'ok',
     service: 'blog-cms'
   });
+});
+
+app.get('/health/ready', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  try {
+    await pool.query({
+      sql: 'SELECT 1 AS ok',
+      timeout: 3000
+    });
+
+    return res.status(200).json({
+      status: 'ok',
+      service: 'blog-cms',
+      database: 'connected'
+    });
+  } catch (error) {
+    console.error(
+      'Kiểm tra database thất bại:',
+      error.code || 'UNKNOWN'
+    );
+
+    return res.status(503).json({
+      status: 'unavailable',
+      service: 'blog-cms',
+      database: 'unavailable'
+    });
+  }
 });
 
 app.use((req, res) => {
