@@ -1,7 +1,7 @@
 const express = require('express');
 
 const pool = require('./config/database');
-
+const { sessionMiddleware } = require('./config/session');
 const app = express();
 
 app.disable('x-powered-by');
@@ -58,10 +58,26 @@ app.get('/health/ready', async (req, res) => {
     });
   }
 });
+app.use(sessionMiddleware);
 
 app.use((req, res) => {
   res.status(404).json({
     message: 'Không tìm thấy đường dẫn'
+  });
+});
+
+app.use((error, req, res, next) => {
+  console.error(
+    'Xử lý yêu cầu thất bại:',
+    error.code || 'UNKNOWN'
+  );
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  return res.status(500).json({
+    message: 'Có lỗi xảy ra khi xử lý yêu cầu'
   });
 });
 

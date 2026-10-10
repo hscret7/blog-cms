@@ -37,6 +37,12 @@ function port(name) {
   return number;
 }
 
+const sessionSecret = required('SESSION_SECRET');
+
+if (!/^[a-f0-9]{64}$/i.test(sessionSecret)) {
+  throw new Error('SESSION_SECRET phải gồm 64 ký tự hex.');
+}
+
 module.exports = {
   database: {
     host: required('DB_HOST'),
@@ -44,5 +50,8 @@ module.exports = {
     user: required('MYSQL_USER'),
     password: required('MYSQL_PASSWORD'),
     database: required('MYSQL_DATABASE')
+  },
+  session: {
+    secret: sessionSecret
   }
 };

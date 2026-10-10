@@ -249,6 +249,28 @@ MySQL `blog_app`.
 Hiện đã có script tạo ADMIN; chức năng đăng nhập website
 và quản lý session chưa được triển khai.
 
+### Phiên đăng nhập
+
+Đã tích hợp express-session với session store MySQL.
+
+- Bảng sessions được tạo bằng migration
+  db/migrations/002_create_sessions_table.sql.
+- SESSION_SECRET được lưu trong .env; không đưa vào Git.
+- Cookie có tên blogcms.sid, bật HttpOnly và SameSite=Lax.
+- Thời hạn cookie là 8 giờ.
+- Hiện chạy HTTP tại máy phát triển nên Secure chưa bật.
+- Không lưu phiên mới chưa có dữ liệu.
+- Các endpoint health được đặt trước middleware session.
+
+Đã kiểm chứng session store ghi, đọc và xóa dữ liệu trong MySQL.
+Trang thử nghiệm chưa tạo cookie vì chưa ghi dữ liệu vào session.
+
+Khi nhận SIGINT hoặc SIGTERM, ứng dụng ngừng nhận yêu cầu,
+đợi các yêu cầu đang chạy hoàn tất, đóng session store và
+connection pool. Thời gian chờ tối đa là 10 giây.
+
+Chưa triển khai đăng nhập, đăng xuất, CSRF và phân quyền.
+
 ## Cấu hình và dữ liệu
 
 Không đưa mật khẩu, file môi trường thật, khóa riêng,
