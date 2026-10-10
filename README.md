@@ -92,7 +92,49 @@ Dừng ứng dụng bằng Ctrl + C tại terminal đang chạy server.
 Endpoint `/health/live` chỉ kiểm tra khả năng phục vụ HTTP,
 chưa kiểm tra kết nối database.
 
-Hướng dẫn Docker Compose sẽ bổ sung khi triển khai được kiểm chứng.
+### Chạy MySQL và phpMyAdmin bằng Docker Compose
+
+Cần có tệp `.env` theo mẫu `.env.example`, với hai mật khẩu
+riêng biệt cho tài khoản ứng dụng và tài khoản root.
+
+Kiểm tra cấu hình:
+
+```bash
+docker compose config --quiet
+```
+
+Tải image và khởi động:
+
+```bash
+docker compose pull
+docker compose up -d --wait --wait-timeout 240
+```
+
+Xem trạng thái:
+
+```bash
+docker compose ps
+```
+
+| Thành phần | Địa chỉ |
+| --- | --- |
+| Website phát triển | http://localhost:18090 |
+| MySQL từ WSL | 127.0.0.1:13319 |
+| phpMyAdmin | http://localhost:18091 |
+
+Đăng nhập phpMyAdmin bằng tài khoản `blog_app` và mật khẩu
+`MYSQL_PASSWORD` trong `.env`.
+
+phpMyAdmin kết nối MySQL qua mạng Docker tại `mysql:3306`.
+
+Dữ liệu MySQL được lưu trong named volume `mysql_data` của dự án.
+
+Các biến khởi tạo MySQL chỉ áp dụng khi thư mục dữ liệu chưa
+chứa database. Sửa `.env` sau khi khởi tạo không tự thay đổi
+mật khẩu đã lưu trong MySQL.
+
+Hiện tại MySQL và phpMyAdmin đã chạy; ứng dụng Express chưa
+kết nối database và các bảng nghiệp vụ chưa được tạo.
 
 ## Cấu hình và dữ liệu
 

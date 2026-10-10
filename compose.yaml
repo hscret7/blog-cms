@@ -1,0 +1,75 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Chua_dat_MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Chua_dat_MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Chua_dat_MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Chua_dat_MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: localhost
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+
+    ports:
+      - "127.0.0.1:${MYSQL_HOST_PORT:?Chua_dat_MYSQL_HOST_PORT}:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    networks:
+      - database
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          MYSQL_PWD="$${MYSQL_PASSWORD}"
+          mysql --protocol=TCP --host=127.0.0.1
+          --user="$${MYSQL_USER}" --database="$${MYSQL_DATABASE}"
+          --execute="SELECT 1;" >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.3-apache
+    restart: unless-stopped
+
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: "3306"
+
+    ports:
+      - "127.0.0.1:${PHPMYADMIN_HOST_PORT:?Chua_dat_PHPMYADMIN_HOST_PORT}:80"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - database
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mysql_data:
+
+networks:
+  database:
+    driver: bridge
