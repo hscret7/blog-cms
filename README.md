@@ -133,8 +133,35 @@ Các biến khởi tạo MySQL chỉ áp dụng khi thư mục dữ liệu chưa
 chứa database. Sửa `.env` sau khi khởi tạo không tự thay đổi
 mật khẩu đã lưu trong MySQL.
 
-Hiện tại MySQL và phpMyAdmin đã chạy; ứng dụng Express chưa
-kết nối database và các bảng nghiệp vụ chưa được tạo.
+### Khởi tạo cấu trúc database
+
+Sử dụng Docker Engine cài trực tiếp trong Ubuntu WSL.
+Trước khi thao tác, kiểm tra đúng Engine:
+
+```bash
+docker info --format 'Name={{.Name}} | OS={{.OperatingSystem}}'
+```
+
+Database gồm ba bảng nghiệp vụ: `users`, `categories`, `posts`.
+
+Sau khi MySQL healthy, chạy tệp SQL một lần trên database
+chưa có các bảng này:
+
+```bash
+docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' < db/migrations/001_create_core_tables.sql
+```
+
+Kiểm tra danh sách bảng:
+
+```bash
+docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --execute="SHOW TABLES;"'
+```
+
+Tệp SQL hiện được chạy thủ công; chưa có công cụ theo dõi migration.
+Không chạy lại tệp tạo bảng trên database đã có các bảng này.
+
+MySQL, phpMyAdmin và cấu trúc database đã được kiểm chứng.
+Ứng dụng Express chưa kết nối database.
 
 ## Cấu hình và dữ liệu
 
