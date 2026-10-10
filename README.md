@@ -30,20 +30,25 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 
 ## Trạng thái
 
-Đã hoàn thành nền tảng ứng dụng và database:
+Đã hoàn thành nền tảng ứng dụng, database, xác thực và phân quyền:
 
-- Server Express với trang thử nghiệm tại `/`.
+- Server Express với trang chủ tại `/`.
 - Endpoint `/health/live` kiểm tra khả năng phục vụ HTTP.
 - Endpoint `/health/ready` kiểm tra kết nối MySQL.
 - Đường dẫn không tồn tại trả HTTP 404.
 - MySQL và phpMyAdmin chạy bằng Docker Compose.
-- Ba bảng nghiệp vụ: `users`, `categories`, `posts`.
+- Ba bảng nghiệp vụ (`users`, `categories`, `posts`) và bảng `sessions`.
 - Express kết nối MySQL bằng connection pool.
 - Đã kiểm tra một số ràng buộc dữ liệu, Unicode và khả năng
   kết nối lại khi MySQL hoạt động trở lại.
+- Xác thực tài khoản với mật khẩu băm Argon2id (kèm script tạo ADMIN và AUTHOR).
+- Quản lý phiên đăng nhập lưu trong MySQL qua express-mysql-session.
+- Bảo vệ chống tấn công CSRF cho đăng nhập và đăng xuất.
+- Phân quyền truy cập giữa vai trò ADMIN và AUTHOR.
+- Giới hạn tần suất đăng nhập (rate limiting) cho `POST /login`.
 
-Chưa triển khai đăng nhập, phân quyền, chức năng quản lý nội dung,
-đóng gói Express bằng Docker, Nginx, giám sát và log tập trung.
+Chưa triển khai chức năng quản lý nội dung (bài viết, danh mục),
+đóng gói Express bằng Docker, Nginx reverse proxy, giám sát và log tập trung.
 
 ## Môi trường thực hiện
 
@@ -227,6 +232,17 @@ cấu trúc bảng hoặc các chức năng nghiệp vụ.
 - Kiểm tra Unicode qua đầu vào không tương tác: tiếng Việt
   và charset utf8mb4 đúng.
 
+### Kiểm tra xác thực và phân quyền đã thực hiện
+
+- Đăng nhập đúng và sai mật khẩu: đăng nhập đúng thông tin thành công và chuyển hướng tới `/account`; nhập sai mật khẩu bị từ chối với HTTP 401 và hiển thị lỗi.
+- Lưu trữ phiên trong MySQL: phiên đăng nhập được lưu chính xác trong bảng `sessions`, mã phiên (session ID) được tái tạo mới khi đăng nhập.
+- Đăng xuất và chặn truy cập: đăng xuất hủy phiên trong MySQL và xóa cookie; truy cập `/account` sau khi đăng xuất bị chặn và chuyển hướng về `/login`.
+- Bảo vệ CSRF: yêu cầu `POST /login` và `POST /logout` thiếu CSRF token (hoặc sai token) bị từ chối với HTTP 403.
+- Phân quyền vai trò: tài khoản vai trò `AUTHOR` truy cập được `/account`, nhưng bị từ chối khi truy cập `/admin` (HTTP 403).
+- Xử lý khóa tài khoản: khi đổi trạng thái tài khoản `AUTHOR` thành `LOCKED`, phiên hiện tại bị từ chối ngay lập tức, bị hủy trong MySQL và chuyển hướng về `/login`; tài khoản bị khóa không thể đăng nhập. Khi tài khoản được mở khóa lại (`ACTIVE`), người dùng phải đăng nhập lại để khởi tạo phiên mới.
+- Hoạt động của rate limiter: 10 yêu cầu `POST /login` đầu tiên thiếu CSRF trả HTTP 403, yêu cầu thứ 11 vượt giới hạn bị chặn với HTTP 429.
+- Tính độc lập của limiter: yêu cầu `GET /login` cùng hai endpoint `/health/live` và `/health/ready` không bị hạn chế và tiếp tục phục vụ với HTTP 200.
+
 ### Tạo tài khoản quản trị website
 
 Sau khi database đã có các bảng nghiệp vụ, chạy:
@@ -246,8 +262,21 @@ Script hỏi tên hiển thị, email, mật khẩu và xác nhận mật khẩu
 Tài khoản ADMIN này dùng cho website, khác với tài khoản
 MySQL `blog_app`.
 
-Hiện đã có script tạo ADMIN; chức năng đăng nhập website
-và quản lý session chưa được triển khai.
+### Tạo tài khoản tác giả (AUTHOR)
+
+Để phục vụ kiểm tra phân quyền, chạy:
+
+```bash
+npm run create-author
+```
+
+Script tạo tài khoản với vai trò cố định AUTHOR và trạng thái ACTIVE,
+sử dụng quy trình nhập tương tác và chính sách mật khẩu tương tự
+tài khoản ADMIN.
+
+Quy định phân quyền đối với vai trò AUTHOR:
+- Được phép truy cập trang thông tin tài khoản `/account`.
+- Không được phép truy cập khu vực quản trị `/admin` (bị từ chối HTTP 403).
 
 ### Phiên đăng nhập
 
@@ -263,13 +292,29 @@ và quản lý session chưa được triển khai.
 - Các endpoint health được đặt trước middleware session.
 
 Đã kiểm chứng session store ghi, đọc và xóa dữ liệu trong MySQL.
-Trang thử nghiệm chưa tạo cookie vì chưa ghi dữ liệu vào session.
+Cookie phiên `blogcms.sid` được tạo khi đăng nhập thành công và bị xóa khi đăng xuất.
 
 Khi nhận SIGINT hoặc SIGTERM, ứng dụng ngừng nhận yêu cầu,
 đợi các yêu cầu đang chạy hoàn tất, đóng session store và
 connection pool. Thời gian chờ tối đa là 10 giây.
 
-Chưa triển khai đăng nhập, đăng xuất, CSRF và phân quyền.
+### Giới hạn thử đăng nhập (Rate Limiting)
+
+Đã triển khai giới hạn thử đăng nhập cho tuyến `POST /login` bằng `express-rate-limit`:
+
+- Áp dụng tối đa 10 yêu cầu trong 15 phút theo địa chỉ IP.
+- Tính cả lượt đăng nhập thành công và thất bại.
+- Middleware rate limit được đặt trước `parseForm`, `requireCsrf` và `login`
+  để các yêu cầu bị chặn không thực hiện kiểm tra form hoặc xác minh Argon2.
+- Khi vượt giới hạn, hệ thống trả về HTTP 429 kèm thông báo:
+  "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau."
+  Phản hồi có các header `Retry-After` và `Cache-Control: no-store`.
+- Chỉ áp dụng đối với `POST /login`. Không hạn chế `GET /login`, `/health/live`,
+  `/health/ready`, `/account` hoặc `/logout`.
+- Sử dụng `MemoryStore` cho phiên bản một tiến trình hiện tại. Bộ đếm sẽ bị mất
+  khi khởi động lại ứng dụng và không được chia sẻ giữa nhiều tiến trình hoặc container.
+- Giữ nguyên cấu hình `trust proxy` mặc định (chưa bật `trust proxy = true` và không
+  tự lấy IP từ `X-Forwarded-For`). Proxy ngược Nginx sẽ được cấu hình ở giai đoạn sau.
 
 ## Cấu hình và dữ liệu
 

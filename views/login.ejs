@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Đăng nhập Blog CMS</h1>
+
+    <% if (errorMessage) { %>
+      <p role="alert"><%= errorMessage %></p>
+    <% } %>
+
+    <form action="/login" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <p>
+        <label for="email">Email</label><br>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="username"
+          maxlength="254"
+          value="<%= email %>"
+          required
+        >
+      </p>
+
+      <p>
+        <label for="password">Mật khẩu</label><br>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+      </p>
+
+      <button type="submit">Đăng nhập</button>
+    </form>
+
+    <p><a href="/">Về trang chủ</a></p>
+  </main>
+</body>
+</html>

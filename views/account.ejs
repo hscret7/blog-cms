@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tài khoản | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Tài khoản của bạn</h1>
+
+    <p>Tên: <%= user.name %></p>
+    <p>Email: <%= user.email %></p>
+    <p>Vai trò: <%= user.role %></p>
+    <p>Trạng thái: <%= user.status %></p>
+
+    <form action="/logout" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit">Đăng xuất</button>
+    </form>
+
+    <p><a href="/">Về trang chủ</a></p>
+  </main>
+</body>
+</html>

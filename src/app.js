@@ -1,10 +1,13 @@
 const express = require('express');
-
+const path = require('node:path');
+const authRoutes = require('./routes/auth-routes');
 const pool = require('./config/database');
 const { sessionMiddleware } = require('./config/session');
 const app = express();
 
 app.disable('x-powered-by');
+app.set('view engine', 'ejs');
+app.set('views', path.resolve(__dirname, '../views'));
 
 app.get('/', (req, res) => {
   res.type('html').send(`
@@ -59,6 +62,7 @@ app.get('/health/ready', async (req, res) => {
   }
 });
 app.use(sessionMiddleware);
+app.use(authRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
