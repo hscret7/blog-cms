@@ -227,6 +227,28 @@ cấu trúc bảng hoặc các chức năng nghiệp vụ.
 - Kiểm tra Unicode qua đầu vào không tương tác: tiếng Việt
   và charset utf8mb4 đúng.
 
+### Tạo tài khoản quản trị website
+
+Sau khi database đã có các bảng nghiệp vụ, chạy:
+
+```bash
+npm run create-admin
+```
+
+Script hỏi tên hiển thị, email, mật khẩu và xác nhận mật khẩu.
+
+- Email được bỏ khoảng trắng đầu/cuối và chuyển về chữ thường.
+- Mật khẩu có từ 15 đến 128 ký tự, được nhập ẩn trên terminal.
+- Mật khẩu được băm bằng Argon2id trước khi lưu.
+- Tài khoản được tạo với vai trò ADMIN và trạng thái ACTIVE.
+- Email đã tồn tại sẽ bị từ chối; tài khoản cũ không bị thay đổi.
+
+Tài khoản ADMIN này dùng cho website, khác với tài khoản
+MySQL `blog_app`.
+
+Hiện đã có script tạo ADMIN; chức năng đăng nhập website
+và quản lý session chưa được triển khai.
+
 ## Cấu hình và dữ liệu
 
 Không đưa mật khẩu, file môi trường thật, khóa riêng,
