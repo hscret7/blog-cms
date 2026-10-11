@@ -52,6 +52,11 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
   cập nhật không đổi nội dung và xử lý ID không hợp lệ.
 - Đã kiểm thử quyền truy cập danh mục và chặn POST thiếu CSRF
   khi đang đăng nhập ADMIN.
+- Có danh sách quản lý bài viết tại `/manage/posts`.
+- ADMIN quản lý bài của mọi tác giả; AUTHOR chỉ quản lý bài của mình.
+- Đã triển khai tạo bài nháp và sửa nội dung.
+- Bài mới có trạng thái DRAFT và published_at bằng NULL.
+- Chưa triển khai xuất bản, chuyển về nháp, xóa bài và ảnh đại diện.
 
 Chưa triển khai chức năng quản lý bài viết và người dùng,
 đóng gói Express bằng Docker, Nginx reverse proxy, giám sát và log tập trung.
@@ -74,6 +79,23 @@ Test tự động cho validation danh mục và giới hạn đăng nhập:
 
 Chưa kiểm thử qua giao diện trường hợp xóa danh mục đang có
 bài viết liên kết; sẽ thực hiện khi triển khai chức năng bài viết.
+
+### Kiểm thử tạo và sửa bài nháp
+
+Đã kiểm chứng:
+- ADMIN và AUTHOR tạo bài nháp với tác giả đúng tài khoản đăng nhập.
+- Sửa nội dung và lưu không đổi nội dung thành công.
+- Slug trùng bị từ chối, không tạo thêm bài.
+- AUTHOR chỉ thấy bài của mình trong danh sách.
+- POST của AUTHOR nhằm sửa bài ADMIN bị từ chối với HTTP 404;
+  dữ liệu bài ADMIN không thay đổi.
+- ADMIN sửa bài AUTHOR nhưng không thay đổi tác giả.
+- POST tạo và sửa bài thiếu CSRF bị từ chối với HTTP 403.
+- Bộ test validation bài viết, danh mục và giới hạn đăng nhập:
+  17 mục PASS, 0 FAIL.
+
+Danh sách quản lý đã có mã phân trang; chưa kiểm chứng chuyển trang
+với dữ liệu trên 20 bài.
 
 ## Môi trường thực hiện
 

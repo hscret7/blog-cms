@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tạo bài nháp | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Tạo bài nháp</h1>
+    <p>Tác giả: <%= user.name %>.</p>
+    <p>Bài mới được lưu ở trạng thái DRAFT, chưa hiển thị công khai.</p>
+
+    <%- include('form', {
+      formAction: '/manage/posts',
+      submitLabel: 'Lưu bài nháp'
+    }) %>
+  </main>
+</body>
+</html>

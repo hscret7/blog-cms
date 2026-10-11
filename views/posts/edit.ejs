@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sửa bài viết | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Sửa bài #<%= post.id %></h1>
+    <p>Trạng thái hiện tại: <%= post.status %>.</p>
+    <p>Lưu nội dung không thay đổi tác giả hoặc trạng thái xuất bản.</p>
+
+    <%- include('form', {
+      formAction: '/manage/posts/' + post.id + '/update',
+      submitLabel: 'Lưu thay đổi'
+    }) %>
+  </main>
+</body>
+</html>

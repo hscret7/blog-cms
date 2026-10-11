@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('node:path');
 const authRoutes = require('./routes/auth-routes');
 const categoryRoutes = require('./routes/category-routes');
+const postRoutes = require('./routes/post-routes');
 const pool = require('./config/database');
 const { sessionMiddleware } = require('./config/session');
 const app = express();
@@ -65,6 +66,7 @@ app.get('/health/ready', async (req, res) => {
 app.use(sessionMiddleware);
 app.use(authRoutes);
 app.use(categoryRoutes);
+app.use(postRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

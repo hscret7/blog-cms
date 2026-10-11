@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý bài viết | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Quản lý bài viết</h1>
+    <p>Xin chào, <%= user.name %>.</p>
+
+    <% if (user.role === 'ADMIN') { %>
+      <p>Bạn đang xem bài viết của tất cả tác giả.</p>
+    <% } else { %>
+      <p>Bạn đang xem các bài viết của mình.</p>
+    <% } %>
+
+    <p>
+      <a href="/manage/posts/new">Tạo bài nháp</a> |
+      <a href="/account">Về tài khoản</a>
+    </p>
+
+    <p>Tổng số bài: <%= total %>.</p>
+
+    <% if (posts.length === 0) { %>
+      <p>Chưa có bài viết.</p>
+    <% } else { %>
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tiêu đề</th>
+            <th>Tác giả</th>
+            <th>Danh mục</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% posts.forEach(function(post) { %>
+            <tr>
+              <td><%= post.id %></td>
+              <td><%= post.title %></td>
+              <td><%= post.author_name %></td>
+              <td><%= post.category_name %></td>
+              <td><%= post.status %></td>
+              <td>
+                <a href="/manage/posts/<%= post.id %>/edit">Sửa</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+
+    <nav aria-label="Phân trang bài viết">
+      <p>Trang <%= page %> / <%= totalPages %></p>
+
+      <% if (page > 1) { %>
+        <a href="/manage/posts?page=<%= page - 1 %>">Trang trước</a>
+      <% } %>
+
+      <% if (page < totalPages) { %>
+        <a href="/manage/posts?page=<%= page + 1 %>">Trang sau</a>
+      <% } %>
+    </nav>
+  </main>
+</body>
+</html>

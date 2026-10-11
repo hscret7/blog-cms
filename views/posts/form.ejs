@@ -1,0 +1,85 @@
+<% if (errorMessage) { %>
+  <p role="alert"><%= errorMessage %></p>
+<% } %>
+
+<% if (errors.form) { %>
+  <p role="alert"><%= errors.form %></p>
+<% } %>
+
+<% if (categories.length === 0) { %>
+  <p>Chưa có danh mục. ADMIN cần tạo danh mục trước khi lưu bài.</p>
+<% } %>
+
+<form action="<%= formAction %>" method="post">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <p>
+    <label for="title">Tiêu đề — bắt buộc, tối đa 200 ký tự:</label><br>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      value="<%= formData.title %>"
+      required
+    >
+    <% if (errors.title) { %>
+      <br><small role="alert"><%= errors.title %></small>
+    <% } %>
+  </p>
+
+  <p>
+    <label for="slug">Slug — chữ a-z, số và gạch nối, tối đa 220 ký tự:</label><br>
+    <input
+      id="slug"
+      name="slug"
+      type="text"
+      maxlength="220"
+      value="<%= formData.slug %>"
+      required
+    >
+    <% if (errors.slug) { %>
+      <br><small role="alert"><%= errors.slug %></small>
+    <% } %>
+  </p>
+
+  <p>
+    <label for="category_id">Danh mục:</label><br>
+    <select id="category_id" name="category_id" required>
+      <option value="">Chọn danh mục</option>
+      <% categories.forEach(function(category) { %>
+        <option
+          value="<%= category.id %>"
+          <% if (String(category.id) === formData.category_id) { %>
+            selected
+          <% } %>
+        ><%= category.name %></option>
+      <% }); %>
+    </select>
+    <% if (errors.category_id) { %>
+      <br><small role="alert"><%= errors.category_id %></small>
+    <% } %>
+  </p>
+
+  <p>
+    <label for="content">
+      Nội dung văn bản thuần — tối đa 100.000 byte UTF-8:
+    </label><br>
+    <textarea
+      id="content"
+      name="content"
+      rows="16"
+      cols="80"
+      required
+    ><%= formData.content %></textarea>
+    <% if (errors.content) { %>
+      <br><small role="alert"><%= errors.content %></small>
+    <% } %>
+  </p>
+
+  <p>
+    <button type="submit" <% if (categories.length === 0) { %>disabled<% } %>>
+      <%= submitLabel %>
+    </button>
+    <a href="/manage/posts">Hủy và về danh sách</a>
+  </p>
+</form>
