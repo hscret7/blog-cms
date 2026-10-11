@@ -3,31 +3,15 @@ const path = require('node:path');
 const authRoutes = require('./routes/auth-routes');
 const categoryRoutes = require('./routes/category-routes');
 const postRoutes = require('./routes/post-routes');
+const publicPostRoutes = require('./routes/public-post-routes');
 const pool = require('./config/database');
 const { sessionMiddleware } = require('./config/session');
+
 const app = express();
 
 app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, '../views'));
-
-app.get('/', (req, res) => {
-  res.type('html').send(`
-    <!DOCTYPE html>
-    <html lang="vi">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Blog CMS</title>
-      </head>
-      <body>
-        <h1>Hệ thống Blog CMS</h1>
-        <p>Ứng dụng Express đã chạy thành công.</p>
-        <p>Đang xây dựng chức năng bài viết, danh mục và người dùng.</p>
-      </body>
-    </html>
-  `);
-});
 
 app.get('/health/live', (req, res) => {
   res.json({
@@ -63,6 +47,11 @@ app.get('/health/ready', async (req, res) => {
     });
   }
 });
+
+// Trang chủ và chi tiết bài công khai không cần session.
+app.use(publicPostRoutes);
+
+// Các chức năng tài khoản và quản lý sử dụng session.
 app.use(sessionMiddleware);
 app.use(authRoutes);
 app.use(categoryRoutes);

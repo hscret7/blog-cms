@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= post.title %> | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <article>
+      <h1><%= post.title %></h1>
+
+      <p>Tác giả: <%= post.author_name %></p>
+
+      <p>
+        Danh mục:
+        <a href="/?category_id=<%= post.category_id %>">
+          <%= post.category_name %>
+        </a>
+      </p>
+
+      <p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p>
+
+      <div style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= post.content %></div>
+    </article>
+
+    <p><a href="/">Về trang chủ</a></p>
+  </main>
+</body>
+</html>

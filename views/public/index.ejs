@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Blog CMS</h1>
+
+    <p>
+      <a href="/login">Đăng nhập</a> |
+      <a href="/account">Tài khoản</a>
+    </p>
+
+    <form action="/" method="get">
+      <p>
+        <label for="q">Tìm theo tiêu đề:</label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          value="<%= filters.q %>"
+        >
+      </p>
+
+      <p>
+        <label for="category_id">Danh mục:</label>
+        <select id="category_id" name="category_id">
+          <option value="">Tất cả danh mục</option>
+          <% categories.forEach(function(category) { %>
+            <option
+              value="<%= category.id %>"
+              <% if (category.id === filters.category_id) { %>
+                selected
+              <% } %>
+            ><%= category.name %></option>
+          <% }); %>
+        </select>
+      </p>
+
+      <button type="submit">Tìm kiếm</button>
+      <a href="/">Xóa bộ lọc</a>
+    </form>
+
+    <p>Tìm thấy <%= total %> bài viết.</p>
+
+    <% if (posts.length === 0) { %>
+      <p>Không có bài viết phù hợp.</p>
+    <% } else { %>
+      <% posts.forEach(function(post) { %>
+        <article>
+          <h2>
+            <a href="/posts/<%= post.slug %>"><%= post.title %></a>
+          </h2>
+          <p>
+            Tác giả: <%= post.author_name %> |
+            Danh mục: <%= post.category_name %>
+          </p>
+        </article>
+      <% }); %>
+    <% } %>
+
+    <nav aria-label="Phân trang bài viết">
+      <p>Trang <%= page %> / <%= totalPages %></p>
+
+      <% if (previousUrl) { %>
+        <a href="<%= previousUrl %>">Trang trước</a>
+      <% } %>
+
+      <% if (nextUrl) { %>
+        <a href="<%= nextUrl %>">Trang sau</a>
+      <% } %>
+    </nav>
+  </main>
+</body>
+</html>

@@ -57,11 +57,15 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Đã triển khai tạo bài nháp và sửa nội dung.
 - Bài mới có trạng thái DRAFT và published_at bằng NULL.
 - Đã triển khai xuất bản, chuyển về nháp và xóa bài
-- Chưa triển khai trang công khai, ảnh đại diện và quản lý người dùng qua giao diện.
+- Chưa triển khai ảnh đại diện và quản lý người dùng qua giao diện.
+- Website công khai hiển thị danh sách và chi tiết bài đã xuất bản.
+- Tìm kiếm theo tiêu đề, lọc danh mục và phân trang 10 bài/trang.
+- Bài nháp không xuất hiện trên website công khai.
+- Nội dung bài viết hiển thị dưới dạng văn bản, được escape HTML.
 
-Chưa triển khai website công khai, ảnh đại diện và quản lý người dùng
-qua giao diện. Chưa đóng gói Express bằng Docker hoặc triển khai
-Nginx reverse proxy, giám sát và log tập trung.
+Chưa triển khai ảnh đại diện và quản lý người dùng qua giao diện.
+Chưa đóng gói Express bằng Docker hoặc triển khai Nginx reverse proxy,
+giám sát và log tập trung.
 
 ### Kiểm thử quản lý danh mục
 
@@ -122,6 +126,50 @@ nghiệp vụ xuất bản và xóa được kiểm thử thủ công.
 - Visual Studio Code kết nối WSL.
 - Docker Engine và Docker Compose.
 - Git.
+
+### Website công khai
+
+Không cần đăng nhập để truy cập:
+
+| Địa chỉ | Chức năng |
+| --- | --- |
+| `/` | Danh sách bài đã xuất bản |
+| `/posts/:slug` | Chi tiết bài đã xuất bản |
+
+Trang chủ hỗ trợ các tham số:
+
+- `q`: tìm kiếm theo tiêu đề, tối đa 200 ký tự Unicode.
+- `category_id`: lọc theo ID danh mục.
+- `page`: số trang; mỗi trang hiển thị tối đa 10 bài.
+
+Bài viết được sắp xếp theo thời điểm xuất bản giảm dần,
+sau đó theo ID giảm dần.
+
+Các trường hợp đã kiểm tra thủ công:
+
+- Bài đã xuất bản trả HTTP 200; bài nháp trả HTTP 404.
+- Chuyển về nháp làm bài biến mất khỏi danh sách công khai.
+- Xuất bản lại cho phép truy cập chi tiết.
+- Tìm kiếm kết hợp lọc danh mục cho kết quả phù hợp.
+- Không có kết quả hiển thị danh sách rỗng.
+- Số trang sai định dạng trả HTTP 400.
+- Từ khóa `%` được tìm như ký tự thông thường.
+- Nội dung chứa thẻ HTML được hiển thị nguyên văn.
+- Với 11 bài, trang đầu có 10 bài và trang sau có 1 bài.
+- Chuyển trang giữ từ khóa tìm kiếm và bộ lọc danh mục.
+
+### Kiểm thử tự động
+
+Chạy bốn bộ kiểm thử:
+
+```bash
+node --test tests/post-validation.test.js tests/category-validation.test.js tests/login-rate-limit.test.js tests/public-post-validation.test.js
+```
+Kết quả lần kiểm tra gần nhất: 24 test đạt, 0 thất bại.
+
+Các bộ kiểm thử này kiểm tra validation và middleware giới hạn
+đăng nhập; không thay thế kiểm thử nghiệp vụ với database
+và kiểm thử trên trình duyệt.
 
 ## Hướng dẫn chạy
 

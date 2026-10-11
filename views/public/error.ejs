@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lỗi <%= statusCode %> | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Lỗi <%= statusCode %></h1>
+    <p role="alert"><%= message %></p>
+
+    <% if (Object.keys(errors).length > 0) { %>
+      <ul>
+        <% Object.values(errors).forEach(function(error) { %>
+          <li><%= error %></li>
+        <% }); %>
+      </ul>
+    <% } %>
+
+    <p><a href="/">Về trang chủ</a></p>
+  </main>
+</body>
+</html>
