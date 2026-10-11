@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý người dùng | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Quản lý người dùng</h1>
+    <p>ADMIN đang đăng nhập: <%= user.name %>.</p>
+
+    <p>
+      <a href="/admin/users/new">Thêm người dùng</a>
+      |
+      <a href="/admin">Về khu vực quản trị</a>
+    </p>
+
+    <p>Có <%= users.length %> tài khoản.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Tên</th>
+          <th scope="col">Email</th>
+          <th scope="col">Vai trò</th>
+          <th scope="col">Trạng thái</th>
+          <th scope="col">Thao tác</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% for (const target of users) { %>
+          <tr>
+            <td><%= target.id %></td>
+            <td><%= target.name %></td>
+            <td><%= target.email %></td>
+            <td><%= target.role %></td>
+            <td><%= target.status %></td>
+            <td>
+              <a href="/admin/users/<%= target.id %>/edit">Sửa</a>
+
+              <% if (target.id === user.id) { %>
+                <span>— Tài khoản đang đăng nhập</span>
+              <% } else if (target.status === 'ACTIVE') { %>
+                <form
+                  method="post"
+                  action="/admin/users/<%= target.id %>/lock"
+                  onsubmit="return confirm('Bạn có chắc muốn khóa tài khoản này?');"
+                >
+                  <input
+                    type="hidden"
+                    name="_csrf"
+                    value="<%= csrfToken %>"
+                  >
+                  <button type="submit">Khóa</button>
+                </form>
+              <% } else { %>
+                <form
+                  method="post"
+                  action="/admin/users/<%= target.id %>/unlock"
+                >
+                  <input
+                    type="hidden"
+                    name="_csrf"
+                    value="<%= csrfToken %>"
+                  >
+                  <button type="submit">Mở khóa</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+
+    <p>
+      Khóa tài khoản giữ lại các bài viết của người dùng.
+      Tài khoản bị khóa không được đăng nhập hoặc tiếp tục
+      truy cập các trang yêu cầu xác thực.
+    </p>
+  </main>
+</body>
+</html>

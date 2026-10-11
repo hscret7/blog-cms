@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thêm người dùng | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Thêm người dùng</h1>
+    <p>ADMIN đang đăng nhập: <%= user.name %>.</p>
+
+    <%- include('form', {
+      action: '/admin/users',
+      creating: true,
+      submitLabel: 'Tạo tài khoản'
+    }) %>
+  </main>
+</body>
+</html>

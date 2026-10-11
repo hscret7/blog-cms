@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sửa người dùng | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Sửa người dùng #<%= targetUser.id %></h1>
+    <p>Trạng thái hiện tại: <%= targetUser.status %>.</p>
+    <p>Biểu mẫu này không thay đổi mật khẩu hoặc trạng thái.</p>
+
+    <% if (targetUser.id === user.id) { %>
+      <p>Bạn không thể tự hạ quyền tài khoản đang đăng nhập.</p>
+    <% } %>
+
+    <%- include('form', {
+      action: '/admin/users/' + targetUser.id + '/update',
+      creating: false,
+      submitLabel: 'Lưu thay đổi'
+    }) %>
+  </main>
+</body>
+</html>

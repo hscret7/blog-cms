@@ -62,6 +62,11 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Tìm kiếm theo tiêu đề, lọc danh mục và phân trang 10 bài/trang.
 - Bài nháp không xuất hiện trên website công khai.
 - Nội dung bài viết hiển thị dưới dạng văn bản, được escape HTML.
+- ADMIN quản lý người dùng qua giao diện: danh sách, tạo tài khoản,
+  sửa tên, email, vai trò và khóa/mở khóa.
+- Chặn tự khóa và tự hạ quyền tài khoản ADMIN đang đăng nhập.
+- Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu
+  truy cập trang yêu cầu xác thực.
 
 Chưa triển khai ảnh đại diện và quản lý người dùng qua giao diện.
 Chưa đóng gói Express bằng Docker hoặc triển khai Nginx reverse proxy,
@@ -170,6 +175,56 @@ Kết quả lần kiểm tra gần nhất: 24 test đạt, 0 thất bại.
 Các bộ kiểm thử này kiểm tra validation và middleware giới hạn
 đăng nhập; không thay thế kiểm thử nghiệp vụ với database
 và kiểm thử trên trình duyệt.
+
+### Quản lý người dùng (ADMIN)
+
+Các tuyến chức năng:
+
+| Phương thức | Địa chỉ | Chức năng |
+| --- | --- | --- |
+| GET | `/admin/users` | Danh sách người dùng |
+| GET | `/admin/users/new` | Biểu mẫu tạo tài khoản |
+| POST | `/admin/users` | Tạo tài khoản |
+| GET | `/admin/users/:id/edit` | Biểu mẫu sửa thông tin |
+| POST | `/admin/users/:id/update` | Sửa tên, email và vai trò |
+| POST | `/admin/users/:id/lock` | Khóa tài khoản |
+| POST | `/admin/users/:id/unlock` | Mở khóa tài khoản |
+
+Toàn bộ tuyến yêu cầu đăng nhập với vai trò ADMIN.
+Các thao tác POST yêu cầu CSRF token.
+
+Tài khoản mới có trạng thái ACTIVE; mật khẩu được băm bằng Argon2id.
+Biểu mẫu lỗi không điền lại mật khẩu.
+Danh sách và trang sửa không lấy hoặc hiển thị hash mật khẩu.
+
+Khóa tài khoản giữ lại người dùng và bài viết.
+Phiên của tài khoản bị khóa bị hủy khi người dùng gửi yêu cầu
+tiếp theo qua middleware xác thực. Sau khi mở khóa,
+người dùng phải đăng nhập lại nếu phiên cũ đã bị hủy.
+
+Các thao tác sửa vai trò và trạng thái sử dụng transaction,
+khóa hàng bằng SELECT ... FOR UPDATE và kiểm tra lại quyền
+của ADMIN thực hiện thao tác.
+
+Đã kiểm chứng:
+
+- Tạo tài khoản, lưu tên tiếng Việt và hash Argon2id.
+- Từ chối email trùng khi tạo và sửa với HTTP 409.
+- Sửa thông tin và lưu không đổi nội dung thành công.
+- Khóa, hủy xác nhận khóa, mở khóa và đăng nhập lại.
+- Vai trò mới có hiệu lực ở yêu cầu tiếp theo của phiên hiện tại.
+- Chặn tự hạ quyền và tự khóa với HTTP 409.
+- ID sai định dạng trả HTTP 400; ID không tồn tại trả HTTP 404.
+- AUTHOR bị chặn truy cập và gửi thao tác quản trị với HTTP 403.
+- Các POST thiếu CSRF bị chặn với HTTP 403.
+- Trong một lần kiểm thử hai ADMIN tạm đồng thời khóa nhau,
+  chỉ một thao tác thành công; thao tác còn lại bị từ chối
+  sau khi kiểm tra lại quyền. Các tài khoản tạm đã được dọn.
+
+Có quy tắc giữ ít nhất một ADMIN hoạt động trong service.
+Chưa kiểm chứng riêng từng nhánh của quy tắc ADMIN cuối cùng.
+
+Hiện chưa hỗ trợ xóa người dùng hoặc đổi mật khẩu qua giao diện.
 
 ## Hướng dẫn chạy
 

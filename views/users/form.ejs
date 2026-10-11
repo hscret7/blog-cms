@@ -1,0 +1,99 @@
+<% if (errorMessage) { %>
+  <p role="alert"><%= errorMessage %></p>
+<% } %>
+
+<% if (errors.form) { %>
+  <p role="alert"><%= errors.form %></p>
+<% } %>
+
+<form method="post" action="<%= action %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <div>
+    <label for="name">Tên hiển thị</label>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      value="<%= formData.name %>"
+      required
+    >
+    <p>Từ 1 đến 100 ký tự Unicode.</p>
+    <% if (errors.name) { %>
+      <p role="alert"><%= errors.name %></p>
+    <% } %>
+  </div>
+
+  <div>
+    <label for="email">Email đăng nhập</label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      value="<%= formData.email %>"
+      maxlength="254"
+      autocomplete="off"
+      required
+    >
+    <% if (errors.email) { %>
+      <p role="alert"><%= errors.email %></p>
+    <% } %>
+  </div>
+
+  <div>
+    <label for="role">Vai trò</label>
+    <select id="role" name="role" required>
+      <option value="">Chọn vai trò</option>
+      <option
+        value="AUTHOR"
+        <%= formData.role === 'AUTHOR' ? 'selected' : '' %>
+      >AUTHOR — Tác giả</option>
+      <option
+        value="ADMIN"
+        <%= formData.role === 'ADMIN' ? 'selected' : '' %>
+      >ADMIN — Quản trị viên</option>
+    </select>
+    <% if (errors.role) { %>
+      <p role="alert"><%= errors.role %></p>
+    <% } %>
+  </div>
+
+  <% if (creating) { %>
+    <div>
+      <label for="password">Mật khẩu</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="new-password"
+        required
+      >
+      <p>Từ 15 đến 128 ký tự. Không tự bỏ khoảng trắng.</p>
+      <% if (errors.password) { %>
+        <p role="alert"><%= errors.password %></p>
+      <% } %>
+    </div>
+
+    <div>
+      <label for="password_confirmation">Nhập lại mật khẩu</label>
+      <input
+        id="password_confirmation"
+        name="password_confirmation"
+        type="password"
+        autocomplete="new-password"
+        required
+      >
+      <% if (errors.password_confirmation) { %>
+        <p role="alert"><%= errors.password_confirmation %></p>
+      <% } %>
+    </div>
+
+    <p>
+      Nếu biểu mẫu bị từ chối, bạn cần nhập lại mật khẩu.
+      Tài khoản mới được tạo ở trạng thái ACTIVE.
+    </p>
+  <% } %>
+
+  <button type="submit"><%= submitLabel %></button>
+  <a href="/admin/users">Hủy</a>
+</form>

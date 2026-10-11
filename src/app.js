@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('node:path');
 const authRoutes = require('./routes/auth-routes');
 const categoryRoutes = require('./routes/category-routes');
+const adminUserRoutes = require('./routes/admin-user-routes');
 const postRoutes = require('./routes/post-routes');
 const publicPostRoutes = require('./routes/public-post-routes');
 const pool = require('./config/database');
@@ -55,6 +56,7 @@ app.use(publicPostRoutes);
 app.use(sessionMiddleware);
 app.use(authRoutes);
 app.use(categoryRoutes);
+app.use(adminUserRoutes);
 app.use(postRoutes);
 
 app.use((req, res) => {
