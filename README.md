@@ -46,9 +46,34 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Bảo vệ chống tấn công CSRF cho đăng nhập và đăng xuất.
 - Phân quyền truy cập giữa vai trò ADMIN và AUTHOR.
 - Giới hạn tần suất đăng nhập (rate limiting) cho `POST /login`.
+- Quản lý danh mục cho ADMIN (danh sách, tạo mới, sửa, xóa với khóa ngoại RESTRICT).
+- ADMIN có thể thêm, xem danh sách, sửa và xóa danh mục.
+- Đã kiểm thử CRUD danh mục, slug trùng, slug sai định dạng,
+  cập nhật không đổi nội dung và xử lý ID không hợp lệ.
+- Đã kiểm thử quyền truy cập danh mục và chặn POST thiếu CSRF
+  khi đang đăng nhập ADMIN.
 
-Chưa triển khai chức năng quản lý nội dung (bài viết, danh mục),
+Chưa triển khai chức năng quản lý bài viết và người dùng,
 đóng gói Express bằng Docker, Nginx reverse proxy, giám sát và log tập trung.
+
+### Kiểm thử quản lý danh mục
+
+Đã kiểm thử thủ công:
+- Thêm, sửa và xóa danh mục chưa có bài viết.
+- Hiển thị và lưu dữ liệu tiếng Việt.
+- Từ chối slug trùng và slug sai định dạng.
+- Cập nhật không đổi nội dung vẫn thành công.
+- Hủy xác nhận xóa không làm mất danh mục.
+- ID sai định dạng trả HTTP 400; ID không tồn tại trả HTTP 404.
+- Người chưa đăng nhập được chuyển về trang đăng nhập.
+- AUTHOR bị từ chối truy cập quản lý danh mục với HTTP 403.
+- ADMIN gửi POST thiếu CSRF bị từ chối với HTTP 403.
+
+Test tự động cho validation danh mục và giới hạn đăng nhập:
+10 mục PASS, 0 FAIL.
+
+Chưa kiểm thử qua giao diện trường hợp xóa danh mục đang có
+bài viết liên kết; sẽ thực hiện khi triển khai chức năng bài viết.
 
 ## Môi trường thực hiện
 
@@ -315,6 +340,25 @@ connection pool. Thời gian chờ tối đa là 10 giây.
   khi khởi động lại ứng dụng và không được chia sẻ giữa nhiều tiến trình hoặc container.
 - Giữ nguyên cấu hình `trust proxy` mặc định (chưa bật `trust proxy = true` và không
   tự lấy IP từ `X-Forwarded-For`). Proxy ngược Nginx sẽ được cấu hình ở giai đoạn sau.
+
+### Quản lý danh mục (ADMIN)
+
+Đã triển khai các chức năng quản lý danh mục theo cấu trúc repository → service → controller → routes:
+
+- `GET /admin/categories`: Danh sách danh mục, thứ tự ID giảm dần.
+- `GET /admin/categories/new`: Giao diện biểu mẫu thêm danh mục mới.
+- `POST /admin/categories`: Tạo danh mục mới.
+- `GET /admin/categories/:id/edit`: Giao diện chỉnh sửa danh mục theo ID.
+- `POST /admin/categories/:id/update`: Cập nhật danh mục theo ID.
+- `POST /admin/categories/:id/delete`: Xóa danh mục theo ID (có xác nhận trên giao diện).
+
+Bảo vệ và quy tắc nghiệp vụ:
+- Toàn bộ route quản lý danh mục yêu cầu đăng nhập với vai trò ADMIN (`requireAuth`, `requireRole('ADMIN')`).
+- Mọi thao tác POST đều yêu cầu phân tích form (`parseForm`) và kiểm tra CSRF token (`requireCsrf`).
+- Thiết lập `Cache-Control: no-store` cho toàn bộ khu vực quản trị.
+- Ràng buộc dữ liệu: tên (1–100 code points), slug duy nhất (chữ thường, số, phân cách bằng dấu gạch ngang, tối đa 150 ký tự), mô tả (tùy chọn, tối đa 500 code points, để trống lưu NULL).
+- Bắt lỗi trùng slug trả HTTP 409, dữ liệu form không hợp lệ trả HTTP 422, ID sai định dạng trả HTTP 400, không tìm thấy danh mục trả HTTP 404.
+- Khóa ngoại: danh mục đang có bài viết liên kết sẽ bị chặn xóa bởi ràng buộc RESTRICT trong database, bắt lỗi `ER_ROW_IS_REFERENCED_2` để trả HTTP 409 kèm thông báo tiếng Việt rõ ràng.
 
 ## Cấu hình và dữ liệu
 

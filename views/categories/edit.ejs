@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sửa danh mục | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Sửa danh mục #<%= category.id %></h1>
+
+    <% if (errorMessage) { %>
+      <p role="alert" style="color: red;"><%= errorMessage %></p>
+    <% } %>
+
+    <form action="/admin/categories/<%= category.id %>/update" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <p>
+        <label for="name">Tên danh mục (bắt buộc, tối đa 100 ký tự):</label><br>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          maxlength="100"
+          value="<%= formData.name %>"
+          required
+        >
+        <% if (errors.name) { %>
+          <br><small role="alert" style="color: red;"><%= errors.name %></small>
+        <% } %>
+      </p>
+
+      <p>
+        <label for="slug">Slug (bắt buộc, chữ thường, số, gạch ngang, tối đa 150 ký tự):</label><br>
+        <input
+          id="slug"
+          name="slug"
+          type="text"
+          maxlength="150"
+          value="<%= formData.slug %>"
+          required
+        >
+        <% if (errors.slug) { %>
+          <br><small role="alert" style="color: red;"><%= errors.slug %></small>
+        <% } %>
+      </p>
+
+      <p>
+        <label for="description">Mô tả (tùy chọn, tối đa 500 ký tự):</label><br>
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          cols="50"
+          maxlength="500"
+        ><%= formData.description %></textarea>
+        <% if (errors.description) { %>
+          <br><small role="alert" style="color: red;"><%= errors.description %></small>
+        <% } %>
+      </p>
+
+      <p>
+        <button type="submit">Cập nhật danh mục</button>
+        <a href="/admin/categories" style="margin-left: 12px;">Hủy và quay lại danh sách</a>
+      </p>
+    </form>
+  </main>
+</body>
+</html>

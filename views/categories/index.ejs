@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý danh mục | Blog CMS</title>
+</head>
+<body>
+  <main>
+    <h1>Quản lý danh mục</h1>
+
+    <p>Xin chào, <%= user.name %>.</p>
+
+    <% if (errorMessage) { %>
+      <p role="alert" style="color: red;"><%= errorMessage %></p>
+    <% } %>
+
+    <p>
+      <a href="/admin/categories/new">Thêm danh mục mới</a> |
+      <a href="/admin">Về khu vực quản trị</a>
+    </p>
+
+    <% if (categories.length === 0) { %>
+      <p>Chưa có danh mục nào.</p>
+    <% } else { %>
+      <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên danh mục</th>
+            <th>Slug</th>
+            <th>Mô tả</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% categories.forEach(function(category) { %>
+            <tr>
+              <td><%= category.id %></td>
+              <td><%= category.name %></td>
+              <td><%= category.slug %></td>
+              <td><%= category.description || '—' %></td>
+              <td>
+                <a href="/admin/categories/<%= category.id %>/edit">Sửa</a>
+                <form
+                  action="/admin/categories/<%= category.id %>/delete"
+                  method="post"
+                  style="display: inline; margin-left: 8px;"
+                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');"
+                >
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit">Xóa</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </main>
+</body>
+</html>
