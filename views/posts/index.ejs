@@ -47,6 +47,36 @@
               <td><%= post.status %></td>
               <td>
                 <a href="/manage/posts/<%= post.id %>/edit">Sửa</a>
+
+                <% if (post.status === 'DRAFT') { %>
+                  <form
+                    action="/manage/posts/<%= post.id %>/publish"
+                    method="post"
+                    style="display: inline;"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Xuất bản</button>
+                  </form>
+                <% } else if (post.status === 'PUBLISHED') { %>
+                  <form
+                    action="/manage/posts/<%= post.id %>/unpublish"
+                    method="post"
+                    style="display: inline;"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Chuyển về nháp</button>
+                  </form>
+                <% } %>
+
+                  <form
+                    action="/manage/posts/<%= post.id %>/delete"
+                    method="post"
+                    style="display: inline;"
+                    onsubmit="return confirm('Xóa vĩnh viễn bài viết này?');"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit">Xóa</button>
+                  </form>
               </td>
             </tr>
           <% }); %>

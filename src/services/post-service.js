@@ -202,9 +202,101 @@ async function updatePost(idParam, user, input) {
   }
 }
 
+async function changePublication(idParam, user, targetStatus) {
+  const postResult = await getPostById(idParam, user);
+
+  if (!postResult.success) {
+    return postResult;
+  }
+
+  const post = postResult.data;
+
+  // Bài đã ở trạng thái yêu cầu: không ghi lại thời điểm xuất bản.
+  if (post.status === targetStatus) {
+    return {
+      success: true,
+      id: post.id
+    };
+  }
+
+  const affectedRows = targetStatus === 'PUBLISHED'
+    ? await postRepository.publish(post.id, user)
+    : await postRepository.unpublish(post.id, user);
+
+  if (affectedRows > 0) {
+    return {
+      success: true,
+      id: post.id
+    };
+  }
+
+  // Có thể bài đã bị xóa hoặc trạng thái thay đổi bởi yêu cầu khác.
+  const current = await postRepository.findByIdForUser(post.id, user);
+
+  if (!current) {
+    return notFound();
+  }
+
+  if (current.status === targetStatus) {
+    return {
+      success: true,
+      id: current.id
+    };
+  }
+
+  return {
+    success: false,
+    status: 409,
+    message:
+      'Trạng thái bài viết đã thay đổi. Vui lòng tải lại trang và thử lại.'
+  };
+}
+
+async function publishPost(idParam, user) {
+  return changePublication(idParam, user, 'PUBLISHED');
+}
+
+async function unpublishPost(idParam, user) {
+  return changePublication(idParam, user, 'DRAFT');
+}
+
+async function deletePost(idParam, user) {
+  const postResult = await getPostById(idParam, user);
+
+  if (!postResult.success) {
+    return postResult;
+  }
+
+  const post = postResult.data;
+
+  // Khi triển khai ảnh, phải bổ sung quy trình xử lý file trước khi xóa.
+  if (post.cover_path !== null) {
+    return {
+      success: false,
+      status: 409,
+      message:
+        'Bài viết có ảnh đại diện. Chức năng xóa ảnh chưa được triển khai.'
+    };
+  }
+
+  const affectedRows = await postRepository.remove(post.id, user);
+
+  if (affectedRows === 0) {
+    return notFound();
+  }
+
+  return {
+    success: true,
+    id: post.id
+  };
+}
+
 module.exports = {
   getPostPage,
   getPostById,
   createDraft,
-  updatePost
+  updatePost,
+  publishPost,
+  unpublishPost,
+  deletePost
 };

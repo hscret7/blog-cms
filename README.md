@@ -56,10 +56,12 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - ADMIN quản lý bài của mọi tác giả; AUTHOR chỉ quản lý bài của mình.
 - Đã triển khai tạo bài nháp và sửa nội dung.
 - Bài mới có trạng thái DRAFT và published_at bằng NULL.
-- Chưa triển khai xuất bản, chuyển về nháp, xóa bài và ảnh đại diện.
+- Đã triển khai xuất bản, chuyển về nháp và xóa bài
+- Chưa triển khai trang công khai, ảnh đại diện và quản lý người dùng qua giao diện.
 
-Chưa triển khai chức năng quản lý bài viết và người dùng,
-đóng gói Express bằng Docker, Nginx reverse proxy, giám sát và log tập trung.
+Chưa triển khai website công khai, ảnh đại diện và quản lý người dùng
+qua giao diện. Chưa đóng gói Express bằng Docker hoặc triển khai
+Nginx reverse proxy, giám sát và log tập trung.
 
 ### Kiểm thử quản lý danh mục
 
@@ -96,6 +98,23 @@ bài viết liên kết; sẽ thực hiện khi triển khai chức năng bài v
 
 Danh sách quản lý đã có mã phân trang; chưa kiểm chứng chuyển trang
 với dữ liệu trên 20 bài.
+
+### Xuất bản, chuyển về nháp và xóa bài
+
+Đã kiểm chứng thủ công:
+- AUTHOR xuất bản và chuyển bài của mình về nháp.
+- Xuất bản lặp không thay đổi thời điểm xuất bản.
+- Sửa nội dung bài đang xuất bản giữ nguyên published_at.
+- Chuyển về nháp đặt published_at bằng NULL.
+- Xuất bản lại ghi thời điểm mới.
+- AUTHOR không thể xuất bản, gỡ hoặc xóa bài ADMIN:
+  các yêu cầu bị từ chối với HTTP 404.
+- Ba thao tác thiếu CSRF bị từ chối với HTTP 403.
+- Hủy xác nhận xóa giữ lại bài; xác nhận xóa bài thử thành công.
+
+Bộ test tự động hiện tại: 17 mục PASS, 0 FAIL.
+Các test này kiểm tra validation và giới hạn đăng nhập;
+nghiệp vụ xuất bản và xóa được kiểm thử thủ công.
 
 ## Môi trường thực hiện
 

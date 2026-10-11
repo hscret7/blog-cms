@@ -9,7 +9,10 @@ const {
   showCreateForm,
   createPost,
   showEditForm,
-  updatePost
+  updatePost,
+  publishPost,
+  unpublishPost,
+  deletePost
 } = require('../controllers/post-controller');
 
 const router = express.Router();
@@ -69,6 +72,27 @@ router.post(
   parseForm,
   requireCsrf,
   updatePost
+);
+
+router.post(
+  '/manage/posts/:id/publish',
+  parseForm,
+  requireCsrf,
+  publishPost
+);
+
+router.post(
+  '/manage/posts/:id/unpublish',
+  parseForm,
+  requireCsrf,
+  unpublishPost
+);
+
+router.post(
+  '/manage/posts/:id/delete',
+  parseForm,
+  requireCsrf,
+  deletePost
 );
 
 router.use(handleFormError);

@@ -31,6 +31,7 @@ async function listPosts(req, res) {
 
   return res.render('posts/index', {
     user: req.user,
+    csrfToken: getCsrfToken(req),
     ...result.data
   });
 }
@@ -134,10 +135,52 @@ async function updatePost(req, res) {
   return res.redirect(303, '/manage/posts');
 }
 
+async function publishPost(req, res) {
+  const result = await postService.publishPost(
+    req.params.id,
+    req.user
+  );
+
+  if (!result.success) {
+    return renderError(res, result);
+  }
+
+  return res.redirect(303, '/manage/posts');
+}
+
+async function unpublishPost(req, res) {
+  const result = await postService.unpublishPost(
+    req.params.id,
+    req.user
+  );
+
+  if (!result.success) {
+    return renderError(res, result);
+  }
+
+  return res.redirect(303, '/manage/posts');
+}
+
+async function deletePost(req, res) {
+  const result = await postService.deletePost(
+    req.params.id,
+    req.user
+  );
+
+  if (!result.success) {
+    return renderError(res, result);
+  }
+
+  return res.redirect(303, '/manage/posts');
+}
+
 module.exports = {
   listPosts,
   showCreateForm,
   createPost,
   showEditForm,
-  updatePost
+  updatePost,
+  publishPost,
+  unpublishPost,
+  deletePost
 };

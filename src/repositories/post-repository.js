@@ -139,10 +139,58 @@ async function updateContent(
   return result.affectedRows;
 }
 
+async function publish(id, user) {
+  validateActor(user);
+
+  const [result] = await pool.execute(
+    `UPDATE posts
+     SET status = 'PUBLISHED',
+         published_at = UTC_TIMESTAMP()
+     WHERE id = ?
+       AND status = 'DRAFT'
+       AND (? = 'ADMIN' OR author_id = ?)`,
+    [id, user.role, user.id]
+  );
+
+  return result.affectedRows;
+}
+
+async function unpublish(id, user) {
+  validateActor(user);
+
+  const [result] = await pool.execute(
+    `UPDATE posts
+     SET status = 'DRAFT',
+         published_at = NULL
+     WHERE id = ?
+       AND status = 'PUBLISHED'
+       AND (? = 'ADMIN' OR author_id = ?)`,
+    [id, user.role, user.id]
+  );
+
+  return result.affectedRows;
+}
+
+async function remove(id, user) {
+  validateActor(user);
+
+  const [result] = await pool.execute(
+    `DELETE FROM posts
+     WHERE id = ?
+       AND (? = 'ADMIN' OR author_id = ?)`,
+    [id, user.role, user.id]
+  );
+
+  return result.affectedRows;
+}
+
 module.exports = {
   findPageForUser,
   countForUser,
   findByIdForUser,
   createDraft,
-  updateContent
+  updateContent,
+  publish,
+  unpublish,
+  remove
 };
