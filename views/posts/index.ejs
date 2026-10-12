@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý bài viết | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Quản lý bài viết</h1>
     <p>Xin chào, <%= user.name %>.</p>
 
@@ -16,7 +19,7 @@
       <p>Bạn đang xem các bài viết của mình.</p>
     <% } %>
 
-    <p>
+    <p class="page-actions">
       <a href="/manage/posts/new">Tạo bài nháp</a> |
       <a href="/account">Về tài khoản</a>
     </p>
@@ -26,7 +29,8 @@
     <% if (posts.length === 0) { %>
       <p>Chưa có bài viết.</p>
     <% } else { %>
-      <table border="1" cellpadding="8">
+      <div class="table-wrap" role="region" aria-label="Danh sách quản lý" tabindex="0">
+      <table>
         <thead>
           <tr>
             <th>ID</th>
@@ -44,9 +48,10 @@
               <td><%= post.title %></td>
               <td><%= post.author_name %></td>
               <td><%= post.category_name %></td>
-              <td><%= post.status %></td>
+              <td><span class="badge <%= post.status === 'DRAFT' ? 'badge-draft' : '' %>"><%= post.status === 'DRAFT' ? 'Nháp' : 'Đã xuất bản' %></span></td>
               <td>
-                <a href="/manage/posts/<%= post.id %>/edit">Sửa</a>
+                <a href="/manage/posts/<%= post.id %>/edit">Sửa / ảnh</a>
+                <% if (post.status === 'PUBLISHED') { %><a href="/posts/<%= post.slug %>">Xem bài</a><% } %>
 
                 <% if (post.status === 'DRAFT') { %>
                   <form
@@ -82,9 +87,10 @@
           <% }); %>
         </tbody>
       </table>
+      </div>
     <% } %>
 
-    <nav aria-label="Phân trang bài viết">
+    <nav class="pagination" aria-label="Phân trang bài viết">
       <p>Trang <%= page %> / <%= totalPages %></p>
 
       <% if (page > 1) { %>
@@ -96,5 +102,6 @@
       <% } %>
     </nav>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

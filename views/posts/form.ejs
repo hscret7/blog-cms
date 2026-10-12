@@ -7,10 +7,11 @@
 <% } %>
 
 <% if (categories.length === 0) { %>
-  <p>Chưa có danh mục. ADMIN cần tạo danh mục trước khi lưu bài.</p>
+  <p role="alert">Chưa có danh mục. Quản trị viên cần tạo danh mục trước khi lưu bài.</p>
+  <% if (user.role === 'ADMIN') { %><p><a class="button" href="/admin/categories/new">Tạo danh mục</a></p><% } %>
 <% } %>
 
-<form action="<%= formAction %>" method="post">
+<form class="form-panel" action="<%= formAction %>" method="post">
   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
   <p>

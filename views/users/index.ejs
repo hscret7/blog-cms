@@ -4,13 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý người dùng | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Quản lý người dùng</h1>
     <p>ADMIN đang đăng nhập: <%= user.name %>.</p>
 
-    <p>
+    <p class="page-actions">
       <a href="/admin/users/new">Thêm người dùng</a>
       |
       <a href="/admin">Về khu vực quản trị</a>
@@ -18,7 +21,8 @@
 
     <p>Có <%= users.length %> tài khoản.</p>
 
-    <table>
+    <div class="table-wrap" role="region" aria-label="Danh sách quản lý" tabindex="0">
+      <table>
       <thead>
         <tr>
           <th scope="col">ID</th>
@@ -74,6 +78,7 @@
         <% } %>
       </tbody>
     </table>
+      </div>
 
     <p>
       Khóa tài khoản giữ lại các bài viết của người dùng.
@@ -81,5 +86,6 @@
       truy cập các trang yêu cầu xác thực.
     </p>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

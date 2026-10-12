@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Thêm người dùng | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Thêm người dùng</h1>
     <p>ADMIN đang đăng nhập: <%= user.name %>.</p>
 
@@ -16,5 +19,6 @@
       submitLabel: 'Tạo tài khoản'
     }) %>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

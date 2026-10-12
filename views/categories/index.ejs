@@ -4,18 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý danh mục | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Quản lý danh mục</h1>
 
     <p>Xin chào, <%= user.name %>.</p>
 
     <% if (errorMessage) { %>
-      <p role="alert" style="color: red;"><%= errorMessage %></p>
+      <p role="alert" ><%= errorMessage %></p>
     <% } %>
 
-    <p>
+    <p class="page-actions">
       <a href="/admin/categories/new">Thêm danh mục mới</a> |
       <a href="/admin">Về khu vực quản trị</a>
     </p>
@@ -23,7 +26,8 @@
     <% if (categories.length === 0) { %>
       <p>Chưa có danh mục nào.</p>
     <% } else { %>
-      <table border="1" cellpadding="8" cellspacing="0">
+      <div class="table-wrap" role="region" aria-label="Danh sách quản lý" tabindex="0">
+      <table>
         <thead>
           <tr>
             <th>ID</th>
@@ -56,7 +60,9 @@
           <% }); %>
         </tbody>
       </table>
+      </div>
     <% } %>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

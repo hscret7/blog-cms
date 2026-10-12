@@ -1,0 +1,23 @@
+<% const viewer = typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : null); %>
+<% const activePath = typeof currentPath === 'string' ? currentPath : ''; %>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="Blog CMS — Trang chủ"><span class="brand-mark" aria-hidden="true">B.</span><span>Blog<span class="brand-light"> / CMS</span></span></a>
+    <nav class="site-nav" aria-label="Điều hướng chính">
+      <a href="/" <%- activePath === '/' ? 'aria-current="page"' : '' %>>Đọc blog</a>
+      <% if (viewer) { %>
+        <a href="/manage/posts" <%- activePath.startsWith('/manage/posts') ? 'aria-current="page"' : '' %>>Bài viết</a>
+        <% if (viewer.role === 'ADMIN') { %>
+          <a href="/admin/categories" <%- activePath.startsWith('/admin/categories') ? 'aria-current="page"' : '' %>>Danh mục</a>
+          <a href="/admin/users" <%- activePath.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>Người dùng</a>
+          <a href="/admin" <%- activePath === '/admin' ? 'aria-current="page"' : '' %>>Quản trị</a>
+        <% } %>
+        <a class="nav-account" href="/account" <%- activePath === '/account' ? 'aria-current="page"' : '' %>><%= viewer.name %></a>
+      <% } else { %>
+        <a href="/account">Không gian quản lý</a>
+        <a class="nav-account" href="/login">Đăng nhập <span aria-hidden="true">↗</span></a>
+      <% } %>
+    </nav>
+  </div>
+</header>

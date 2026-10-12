@@ -167,20 +167,13 @@ Các trường hợp đã kiểm tra thủ công:
 
 ### Kiểm thử tự động
 
-Chạy bảy bộ kiểm thử từ thư mục gốc dự án:
+Chạy toàn bộ chín bộ kiểm thử từ thư mục gốc dự án:
 
 ```bash
-node --test \
-  tests/post-validation.test.js \
-  tests/category-validation.test.js \
-  tests/login-rate-limit.test.js \
-  tests/public-post-validation.test.js \
-  tests/user-validation.test.js \
-  tests/cover-image.test.js \
-  tests/cover-storage.test.js
+node --test tests/*.test.js
 ```
 
-Kết quả lần kiểm tra gần nhất: 49 test đạt, 0 thất bại.
+Kết quả lần kiểm tra gần nhất: 58 test đạt, 0 thất bại.
 
 Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
 xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
@@ -761,6 +754,28 @@ RAM sử dụng chỉ số working set.
 Các bộ đếm Nginx và MySQL bao gồm lưu lượng giám sát.
 
 Chưa cấu hình cảnh báo tự động.
+## Giao diện và điều hướng
+
+Giao diện responsive dùng CSS nội bộ tại `public/css/site.css`.
+Trang chủ có bộ lọc, thẻ bài viết và phân trang; trang chi tiết giữ
+nội dung văn bản đã escape. Các trang tài khoản và quản lý dùng chung
+header/footer, biểu mẫu và bảng có thể cuộn trên màn hình nhỏ.
+
+Từ trang chủ, bấm **Đăng nhập** rồi dùng menu hoặc các thẻ chức năng
+trên trang tài khoản. AUTHOR có mục Bài viết; ADMIN có thêm Danh mục,
+Người dùng và Quản trị. Nút **Sửa / ảnh** mở cả chỉnh sửa nội dung và
+quản lý ảnh. Nút **Xem bài** chỉ xuất hiện cho bài đã xuất bản.
+Đăng xuất nằm trên trang tài khoản, truy cập bằng tên tài khoản trên menu.
+Các route vẫn kiểm tra quyền trên server và CSRF cho thao tác POST.
+
+Express chỉ phục vụ `/css` và `/js` trước session. Ảnh bài viết tiếp tục
+được trả qua `/media/posts/:id/cover` có kiểm tra quyền.
+Không có CDN hoặc dependency mới cho giao diện.
+
+Kiểm tra tự động tất cả các bộ test bằng `node --test tests/*.test.js`.
+Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
+[Kiểm tra giao diện](docs/kiem-thu-giao-dien.md).
+
 ## Cấu hình và dữ liệu
 
 Không đưa mật khẩu, file môi trường thật, khóa riêng, log runtime hoặc dữ liệu database vào repository.

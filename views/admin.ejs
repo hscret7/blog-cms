@@ -4,15 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản trị | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
 </head>
 <body>
-  <main>
-    <h1>Khu vực quản trị</h1>
-    <p>Xin chào, <%= user.name %>.</p>
-    <p>Tài khoản của bạn có quyền ADMIN.</p>
-    <p><a href="/admin/categories">Quản lý danh mục</a></p>
-    <p><a href="/admin/users">Quản lý người dùng</a></p>
-    <p><a href="/account">Về trang tài khoản</a></p>
+  <%- include('partials/header') %>
+  <main id="main-content">
+    <span class="eyebrow">Quản trị viên</span><h1>Khu vực quản trị</h1><p>Xin chào, <%= user.name %>. Quản lý nội dung và cộng đồng của blog.</p>
+    <div class="action-grid">
+      <section class="action-card"><h2>Bài viết</h2><p>Xem bài của tất cả tác giả, chỉnh sửa nội dung và quản lý xuất bản.</p><a class="button" href="/manage/posts">Quản lý bài viết →</a></section>
+      <section class="action-card"><h2>Danh mục</h2><p>Tạo các chủ đề giúp người đọc tìm bài viết dễ dàng hơn.</p><a class="button" href="/admin/categories">Quản lý danh mục →</a></section>
+      <section class="action-card"><h2>Người dùng</h2><p>Tạo tài khoản, sửa thông tin, phân quyền và khóa hoặc mở khóa.</p><a class="button" href="/admin/users">Quản lý người dùng →</a></section>
+      <section class="action-card"><h2>Tài khoản của bạn</h2><p>Xem thông tin cá nhân hoặc đăng xuất khỏi phiên hiện tại.</p><a class="button button-secondary" href="/account">Về tài khoản →</a></section>
+    </div>
   </main>
+  <%- include('partials/footer') %>
 </body>
 </html>

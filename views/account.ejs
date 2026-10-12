@@ -4,23 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tài khoản | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
 </head>
 <body>
-  <main>
-    <h1>Tài khoản của bạn</h1>
-
-    <p>Tên: <%= user.name %></p>
-    <p>Email: <%= user.email %></p>
-    <p>Vai trò: <%= user.role %></p>
-    <p>Trạng thái: <%= user.status %></p>
-
-    <form action="/logout" method="post">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <button type="submit">Đăng xuất</button>
-    </form>
-
-    <p><a href="/manage/posts">Quản lý bài viết</a></p>
-    <p><a href="/">Về trang chủ</a></p>
+  <%- include('partials/header') %>
+  <main id="main-content">
+    <span class="eyebrow">Không gian quản lý</span><h1>Xin chào, <%= user.name %>.</h1><p>Viết, chỉnh sửa và quản lý nội dung ngay tại đây.</p>
+    <div class="account-layout">
+      <section class="profile-card" aria-labelledby="profile-heading">
+        <div class="avatar" aria-hidden="true"><%= Array.from(user.name)[0] || 'B' %></div><h2 id="profile-heading">Tài khoản của bạn</h2>
+        <span class="badge"><%= user.role === 'ADMIN' ? 'Quản trị viên' : 'Tác giả' %></span>
+        <dl><dt>Tên hiển thị</dt><dd><%= user.name %></dd><dt>Email</dt><dd><%= user.email %></dd><dt>Vai trò</dt><dd><%= user.role %></dd><dt>Trạng thái</dt><dd><%= user.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa' %></dd></dl>
+        <form action="/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary" type="submit">Đăng xuất</button></form>
+      </section>
+      <div class="action-grid">
+        <section class="action-card"><span class="action-icon" aria-hidden="true">✎</span><h2>Bài viết</h2><p>Tạo bài nháp, chỉnh sửa, xuất bản và quản lý ảnh đại diện.</p><a class="button" href="/manage/posts">Quản lý bài viết →</a></section>
+        <section class="action-card"><span class="action-icon" aria-hidden="true">+</span><h2>Ý tưởng mới</h2><p>Bắt đầu với một bài nháp. Bạn có thể xuất bản khi nội dung đã sẵn sàng.</p><a class="button button-secondary" href="/manage/posts/new">Tạo bài nháp</a></section>
+        <% if (user.role === 'ADMIN') { %>
+          <section class="action-card"><span class="action-icon" aria-hidden="true">≡</span><h2>Danh mục</h2><p>Thêm, sửa và sắp xếp các chủ đề của blog.</p><a class="button button-secondary" href="/admin/categories">Quản lý danh mục</a></section>
+          <section class="action-card"><span class="action-icon" aria-hidden="true">◎</span><h2>Người dùng</h2><p>Tạo tài khoản, cập nhật vai trò và khóa hoặc mở khóa người dùng.</p><a class="button button-secondary" href="/admin/users">Quản lý người dùng</a></section>
+        <% } %>
+      </div>
+    </div>
   </main>
+  <%- include('partials/footer') %>
 </body>
 </html>

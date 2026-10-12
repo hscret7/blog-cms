@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lỗi <%= statusCode %> | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="error-page">
     <h1>Lỗi <%= statusCode %></h1>
     <p role="alert"><%= message %></p>
 
@@ -20,5 +23,6 @@
 
     <p><a href="/">Về trang chủ</a></p>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

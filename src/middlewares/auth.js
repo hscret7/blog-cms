@@ -37,6 +37,7 @@ async function requireAuth(req, res, next) {
   }
 
   req.user = user;
+  res.locals.currentUser = user;
   return next();
 }
 

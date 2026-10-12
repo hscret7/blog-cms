@@ -4,35 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= post.title %> | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
 </head>
 <body>
-  <main>
-    <article>
+  <%- include('../partials/header') %>
+  <main id="main-content">
+    <article class="reader">
+      <a class="back-link" href="/">← Về trang chủ</a>
+      <div class="category-label"><a href="/?category_id=<%= post.category_id %>"><%= post.category_name %></a></div>
       <h1><%= post.title %></h1>
-
-      <p>Tác giả: <%= post.author_name %></p>
-
-      <p>
-        Danh mục:
-        <a href="/?category_id=<%= post.category_id %>">
-          <%= post.category_name %>
-        </a>
-      </p>
-
-      <p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p>
-      <% if (post.cover_path) { %>
-        <p>
-          <img
-            src="/media/posts/<%= post.id %>/cover"
-            alt="Ảnh đại diện: <%= post.title %>"
-            style="max-width: 100%; width: 960px; height: auto;"
-          >
-        </p>
-      <% } %>
-      <div style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= post.content %></div>
+      <div class="reader-meta"><p>Tác giả: <strong><%= post.author_name %></strong></p><p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p></div>
+      <% if (post.cover_path) { %><img class="reader-cover" src="/media/posts/<%= post.id %>/cover" alt="Ảnh đại diện: <%= post.title %>"><% } %>
+      <div class="post-content"><%= post.content %></div>
     </article>
-
-    <p><a href="/">Về trang chủ</a></p>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

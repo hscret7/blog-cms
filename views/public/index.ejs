@@ -3,86 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Blog CMS</title>
+  <title>Blog CMS — Câu chuyện và ý tưởng</title>
+  <link rel="stylesheet" href="/css/site.css?v=1">
+  <script src="/js/ui.js?v=1" defer></script>
 </head>
 <body>
-  <main>
-    <h1>Blog CMS</h1>
-
-    <p>
-      <a href="/login">Đăng nhập</a> |
-      <a href="/account">Tài khoản</a>
-    </p>
-
-    <form action="/" method="get">
-      <p>
-        <label for="q">Tìm theo tiêu đề:</label>
-        <input
-          id="q"
-          name="q"
-          type="search"
-          value="<%= filters.q %>"
-        >
-      </p>
-
-      <p>
-        <label for="category_id">Danh mục:</label>
-        <select id="category_id" name="category_id">
-          <option value="">Tất cả danh mục</option>
-          <% categories.forEach(function(category) { %>
-            <option
-              value="<%= category.id %>"
-              <% if (category.id === filters.category_id) { %>
-                selected
-              <% } %>
-            ><%= category.name %></option>
-          <% }); %>
-        </select>
-      </p>
-
-      <button type="submit">Tìm kiếm</button>
-      <a href="/">Xóa bộ lọc</a>
+  <%- include('../partials/header') %>
+  <main id="main-content">
+    <section class="hero" aria-labelledby="blog-heading">
+      <div><span class="eyebrow">Góc đọc & chia sẻ</span><h1 id="blog-heading">Câu chuyện hay.<br>Ý tưởng mới.</h1><p>Khám phá những bài viết, góc nhìn và điều đáng học hỏi từ cộng đồng tác giả.</p></div>
+      <div class="hero-art" aria-hidden="true"><div class="hero-sheet"><span>“</span><strong>Mỗi ý tưởng<br>đều có một câu chuyện.</strong><i></i><i></i><i></i></div></div>
+    </section>
+    <form class="filter-bar" action="/" method="get" aria-label="Tìm và lọc bài viết">
+      <p><label for="q">Tìm theo tiêu đề</label><input id="q" name="q" type="search" placeholder="Bạn muốn đọc điều gì?" value="<%= filters.q %>"></p>
+      <p><label for="category_id">Danh mục</label><select id="category_id" name="category_id"><option value="">Tất cả danh mục</option><% categories.forEach(function(category) { %><option value="<%= category.id %>" <%= category.id === filters.category_id ? 'selected' : '' %>><%= category.name %></option><% }); %></select></p>
+      <button type="submit">Tìm kiếm</button><a class="button button-secondary" href="/">Xóa bộ lọc</a>
     </form>
-
-    <p>Tìm thấy <%= total %> bài viết.</p>
-
+    <div class="section-heading"><h2><%= filters.q || filters.category_id ? 'Kết quả tìm kiếm' : 'Bài viết mới nhất' %></h2><span class="count-label">Tìm thấy <%= total %> bài viết</span></div>
     <% if (posts.length === 0) { %>
-      <p>Không có bài viết phù hợp.</p>
+      <section class="empty-state"><h2>Chưa có bài viết phù hợp</h2><p>Thử một từ khóa khác hoặc bỏ bộ lọc danh mục.</p><a class="button button-secondary" href="/">Xem tất cả bài viết</a></section>
     <% } else { %>
-      <% posts.forEach(function(post) { %>
-        <article>
-          <h2>
-            <a href="/posts/<%= post.slug %>"><%= post.title %></a>
-          </h2>
-          <% if (post.cover_path) { %>
-            <a href="/posts/<%= post.slug %>">
-              <img
-                src="/media/posts/<%= post.id %>/cover"
-                alt="Ảnh đại diện: <%= post.title %>"
-                loading="lazy"
-                style="max-width: 100%; width: 320px; height: auto;"
-              >
-            </a>
-          <% } %>
-          <p>
-            Tác giả: <%= post.author_name %> |
-            Danh mục: <%= post.category_name %>
-          </p>
-        </article>
-      <% }); %>
+      <div class="post-grid">
+        <% posts.forEach(function(post) { %>
+          <article class="post-card">
+            <% if (post.cover_path) { %>
+              <a class="cover-link" href="/posts/<%= post.slug %>"><img src="/media/posts/<%= post.id %>/cover" alt="Ảnh đại diện: <%= post.title %>" loading="lazy"></a>
+            <% } else { %>
+              <a class="cover-link cover-placeholder" href="/posts/<%= post.slug %>" aria-label="Đọc bài: <%= post.title %>"><span aria-hidden="true">B.</span></a>
+            <% } %>
+            <div class="card-content"><a class="category-label" href="/?category_id=<%= post.category_id %>"><%= post.category_name %></a><h2><a href="/posts/<%= post.slug %>"><%= post.title %></a></h2><div class="card-meta"><span><%= post.author_name %></span><a href="/posts/<%= post.slug %>" aria-label="Đọc bài: <%= post.title %>">Đọc bài →</a></div></div>
+          </article>
+        <% }); %>
+      </div>
     <% } %>
-
-    <nav aria-label="Phân trang bài viết">
+    <nav class="pagination" aria-label="Phân trang bài viết">
+      <% if (previousUrl) { %><a href="<%= previousUrl %>">← Trang trước</a><% } %>
       <p>Trang <%= page %> / <%= totalPages %></p>
-
-      <% if (previousUrl) { %>
-        <a href="<%= previousUrl %>">Trang trước</a>
-      <% } %>
-
-      <% if (nextUrl) { %>
-        <a href="<%= nextUrl %>">Trang sau</a>
-      <% } %>
+      <% if (nextUrl) { %><a href="<%= nextUrl %>">Trang sau →</a><% } %>
     </nav>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

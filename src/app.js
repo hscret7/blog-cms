@@ -27,6 +27,20 @@ app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, '../views'));
 
+// Chỉ phục vụ tài nguyên giao diện; ảnh bài viết vẫn đi qua route có kiểm tra quyền.
+for (const directory of ['css', 'js']) {
+  app.use('/' + directory, express.static(
+    path.resolve(__dirname, '../public', directory),
+    { index: false, dotfiles: 'deny' }
+  ));
+}
+
+app.use((req, res, next) => {
+  res.locals.currentUser = null;
+  res.locals.currentPath = req.path;
+  next();
+});
+
 app.get('/health/live', (req, res) => {
   res.json({
     status: 'ok',
