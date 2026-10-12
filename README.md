@@ -65,11 +65,13 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Chặn tự khóa và tự hạ quyền tài khoản ADMIN đang đăng nhập.
 - Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu truy cập trang yêu cầu xác thực.
 - Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
+- Đã triển khai giám sát Nginx, MySQL và container bằng Prometheus, các exporter, cAdvisor và Grafana.
 
+Chưa triển khai Loki, Promtail và minh chứng truy vấn LogQL.
 Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
 Đã triển khai Nginx reverse proxy với security headers.
 Website được truy cập qua Nginx; app không công bố cổng ra host.
-Chưa triển khai giám sát và log tập trung.
+Chưa triển khai log tập trung.
 
 
 ### Kiểm thử quản lý danh mục
@@ -708,6 +710,57 @@ Chưa có công cụ tự động đối soát tệp còn sót.
 Chưa kiểm thử riêng ảnh động/nhiều trang, hướng EXIF
 hoặc các tình huống lỗi ghi tệp và commit không chắc chắn.
 
+### Giám sát hệ thống
+
+Các thành phần:
+
+- Prometheus v3.15.0: thu thập metrics mỗi 15 giây.
+- Nginx exporter: image tag 1.5.1.
+- MySQL exporter v0.20.0: sử dụng tài khoản giám sát riêng.
+- cAdvisor v0.60.6: thu thập CPU và RAM container.
+- Grafana OSS 13.2.3: hiển thị dashboard.
+
+Địa chỉ:
+
+- Prometheus: http://localhost:19090
+- Grafana: http://localhost:13000
+- Dashboard: http://localhost:13000/d/blog-cms-overview
+
+Prometheus lưu dữ liệu trong volume prometheus_data.
+Cấu hình retention là 7 ngày hoặc ngưỡng kích thước 1GB;
+đây không phải giới hạn cứng cho toàn bộ dung lượng volume.
+
+Grafana lưu dữ liệu trong volume grafana_data.
+Datasource và dashboard được provision từ infra/grafana.
+
+Thông tin đăng nhập riêng được lưu trong secrets/,
+không đưa vào Git hoặc Docker build context.
+Mật khẩu Grafana trong tệp được dùng khi khởi tạo quản trị;
+sửa tệp không tự thay đổi mật khẩu đã lưu trong database Grafana.
+
+Tài khoản blog_exporter có PROCESS, REPLICATION CLIENT,
+SELECT trên toàn server và tối đa 3 kết nối.
+Tài khoản này chỉ dành cho giám sát, không dùng cho ứng dụng.
+
+Prometheus chỉ lưu metrics cAdvisor có nhãn Compose
+project bằng blog-cms. cAdvisor vẫn quan sát container
+trên host, cần quyền privileged và các mount host;
+không tính cAdvisor là minh chứng hardening của ứng dụng.
+
+Đã kiểm chứng:
+
+- Bốn job prometheus, nginx, mysql, cadvisor đều up = 1.
+- nginx_up và mysql_up đều bằng 1.
+- CPU và RAM có dữ liệu của các service Blog CMS.
+- Grafana healthy, API health trả HTTP 200.
+- Dashboard gồm 8 panel có dữ liệu.
+- Tạo 30 yêu cầu website và quan sát tốc độ yêu cầu Nginx tăng.
+
+CPU 100% tương ứng một lõi CPU.
+RAM sử dụng chỉ số working set.
+Các bộ đếm Nginx và MySQL bao gồm lưu lượng giám sát.
+
+Chưa cấu hình cảnh báo tự động.
 ## Cấu hình và dữ liệu
 
 Không đưa mật khẩu, file môi trường thật, khóa riêng, log runtime hoặc dữ liệu database vào repository.
