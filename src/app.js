@@ -11,6 +11,18 @@ const { sessionMiddleware } = require('./config/session');
 
 const app = express();
 
+const trustedProxyIp = process.env.TRUSTED_PROXY_IP;
+
+if (trustedProxyIp !== undefined && trustedProxyIp !== '') {
+  const { isIP } = require('node:net');
+
+  if (isIP(trustedProxyIp) !== 4) {
+    throw new Error('TRUSTED_PROXY_IP phải là một địa chỉ IPv4 hợp lệ.');
+  }
+
+  app.set('trust proxy', trustedProxyIp);
+}
+
 app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, '../views'));

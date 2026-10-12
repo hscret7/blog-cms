@@ -14,13 +14,14 @@ services:
       PORT: "3000"
       DB_HOST: mysql
       DB_PORT: "3306"
+      TRUSTED_PROXY_IP: 172.26.0.10
       MYSQL_DATABASE: ${MYSQL_DATABASE:?Chua_dat_MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER:?Chua_dat_MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Chua_dat_MYSQL_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET:?Chua_dat_SESSION_SECRET}
 
-    ports:
-      - "127.0.0.1:18090:3000"
+    expose:
+      - "3000"
 
     volumes:
       - type: bind
@@ -31,6 +32,7 @@ services:
 
     networks:
       - database
+      - proxy
 
     depends_on:
       mysql:
@@ -60,6 +62,45 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:18090:80"
+
+    volumes:
+      - type: bind
+        source: ./infra/nginx/default.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
+
+    networks:
+      proxy:
+        ipv4_address: 172.26.0.10
+
+    depends_on:
+      app:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1/health/ready
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   mysql:
     image: mysql:8.4
     restart: unless-stopped
@@ -134,3 +175,10 @@ volumes:
 networks:
   database:
     driver: bridge
+
+  proxy:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.26.0.0/24
+          gateway: 172.26.0.1

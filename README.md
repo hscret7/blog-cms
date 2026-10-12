@@ -67,7 +67,9 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
 
 Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
-Chưa triển khai Nginx reverse proxy, giám sát và log tập trung.
+Đã triển khai Nginx reverse proxy với security headers.
+Website được truy cập qua Nginx; app không công bố cổng ra host.
+Chưa triển khai giám sát và log tập trung.
 
 
 ### Kiểm thử quản lý danh mục
@@ -319,6 +321,77 @@ Dữ liệu được lưu ngoài container nhưng vẫn cần sao lưu riêng.
 Base image hiện dùng tag `node:24-bookworm` và
 `node:24-bookworm-slim`. Bản đã build được kiểm chứng chạy
 Node.js 24.21.0; các tag này có thể thay đổi theo thời gian.
+
+### Nginx reverse proxy
+
+Website: http://localhost:18090
+
+Nginx tiếp nhận cổng host 18090 và chuyển tiếp tới app:3000.
+App không công bố cổng ra host.
+
+Mạng triển khai:
+
+- proxy: Nginx và app, subnet 172.26.0.0/24.
+- database: app, MySQL và phpMyAdmin.
+- Nginx có IP cố định 172.26.0.10.
+- App chỉ tin IP này qua cấu hình TRUSTED_PROXY_IP.
+- Chạy trực tiếp trong WSL: để TRUSTED_PROXY_IP trống.
+
+Cấu hình Nginx: infra/nginx/default.conf.
+
+Nginx ghi đè X-Forwarded-For bằng địa chỉ kết nối thực
+và đặt X-Forwarded-Host, X-Forwarded-Proto.
+Ứng dụng không tự lấy IP từ header do khách gửi.
+
+Security headers:
+
+- X-Content-Type-Options: nosniff.
+- X-Frame-Options: DENY.
+- Referrer-Policy: strict-origin-when-cross-origin.
+- Permissions-Policy: camera=(), microphone=(), geolocation=().
+
+Headers áp dụng cả với phản hồi lỗi.
+Nginx nhận request body tối đa 6 MiB; ứng dụng vẫn giới hạn
+tệp ảnh tối đa 5 MiB.
+
+Kiểm tra cú pháp cấu hình:
+
+```bash
+docker compose exec nginx nginx -t
+```
+
+Sau khi sửa cấu hình và kiểm tra thành công, reload:
+
+```bash
+docker compose exec nginx nginx -s reload
+```
+
+Xem trạng thái và log:
+
+```bash
+docker compose ps
+docker compose logs --tail=30 nginx
+```
+
+Đã kiểm chứng:
+
+- Nginx và app healthy; trang chủ cùng ảnh hoạt động qua proxy.
+- Readiness trả HTTP 200, đường dẫn không tồn tại trả HTTP 404.
+- Cả phản hồi 200 và 404 có đủ bốn security headers.
+- App chỉ tin IP Nginx và không có port binding ra host.
+- 10 POST đăng nhập thiếu CSRF trả 403; lượt thứ 11 trả 429.
+- Đổi X-Forwarded-For giả không vượt được giới hạn đăng nhập.
+- Phản hồi 429 có Retry-After, Cache-Control: no-store
+  và các security headers.
+- GET /login và hai endpoint health vẫn trả HTTP 200.
+- Đăng nhập lại qua Nginx thành công; tải lại trang vẫn giữ phiên.
+- Tải/thay ảnh qua Nginx thành công; ảnh hiển thị trên trang sửa, trang chủ và trang chi tiết.
+
+Phiên bản Nginx đã chạy và kiểm chứng: 1.30.5.
+Compose hiện dùng tag nginx:stable-alpine; tag có thể thay đổi.
+
+Hiện sử dụng HTTP với security headers, chưa cấu hình HTTPS.
+Security headers không mã hóa đường truyền.
 
 ### Chạy bản phát triển trong WSL
 
