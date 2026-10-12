@@ -57,20 +57,17 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Đã triển khai tạo bài nháp và sửa nội dung.
 - Bài mới có trạng thái DRAFT và published_at bằng NULL.
 - Đã triển khai xuất bản, chuyển về nháp và xóa bài
-- Chưa triển khai ảnh đại diện và quản lý người dùng qua giao diện.
 - Website công khai hiển thị danh sách và chi tiết bài đã xuất bản.
 - Tìm kiếm theo tiêu đề, lọc danh mục và phân trang 10 bài/trang.
 - Bài nháp không xuất hiện trên website công khai.
 - Nội dung bài viết hiển thị dưới dạng văn bản, được escape HTML.
-- ADMIN quản lý người dùng qua giao diện: danh sách, tạo tài khoản,
-  sửa tên, email, vai trò và khóa/mở khóa.
+- ADMIN quản lý người dùng qua giao diện: danh sách, tạo tài khoản, sửa tên, email, vai trò và khóa/mở khóa.
 - Chặn tự khóa và tự hạ quyền tài khoản ADMIN đang đăng nhập.
-- Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu
-  truy cập trang yêu cầu xác thực.
+- Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu truy cập trang yêu cầu xác thực.
+- Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
 
-Chưa triển khai ảnh đại diện và quản lý người dùng qua giao diện.
-Chưa đóng gói Express bằng Docker hoặc triển khai Nginx reverse proxy,
-giám sát và log tập trung.
+Chưa đóng gói Express bằng Docker hoặc triển khai Nginx reverse proxy, giám sát và log tập trung.
+
 
 ### Kiểm thử quản lý danh mục
 
@@ -165,16 +162,32 @@ Các trường hợp đã kiểm tra thủ công:
 
 ### Kiểm thử tự động
 
-Chạy bốn bộ kiểm thử:
+Chạy bảy bộ kiểm thử từ thư mục gốc dự án:
 
 ```bash
-node --test tests/post-validation.test.js tests/category-validation.test.js tests/login-rate-limit.test.js tests/public-post-validation.test.js
+node --test \
+  tests/post-validation.test.js \
+  tests/category-validation.test.js \
+  tests/login-rate-limit.test.js \
+  tests/public-post-validation.test.js \
+  tests/user-validation.test.js \
+  tests/cover-image.test.js \
+  tests/cover-storage.test.js
 ```
-Kết quả lần kiểm tra gần nhất: 24 test đạt, 0 thất bại.
 
-Các bộ kiểm thử này kiểm tra validation và middleware giới hạn
-đăng nhập; không thay thế kiểm thử nghiệp vụ với database
-và kiểm thử trên trình duyệt.
+Kết quả lần kiểm tra gần nhất: 49 test đạt, 0 thất bại.
+
+Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
+xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
+kiểm thử nghiệp vụ với database và kiểm thử trên trình duyệt.
+
+Kiểm tra dependency:
+
+```bash
+npm audit
+```
+
+Kết quả lần kiểm tra gần nhất: không có lỗ hổng được npm audit báo cáo.
 
 ### Quản lý người dùng (ADMIN)
 
@@ -504,7 +517,45 @@ Bảo vệ và quy tắc nghiệp vụ:
 - Bắt lỗi trùng slug trả HTTP 409, dữ liệu form không hợp lệ trả HTTP 422, ID sai định dạng trả HTTP 400, không tìm thấy danh mục trả HTTP 404.
 - Khóa ngoại: danh mục đang có bài viết liên kết sẽ bị chặn xóa bởi ràng buộc RESTRICT trong database, bắt lỗi `ER_ROW_IS_REFERENCED_2` để trả HTTP 409 kèm thông báo tiếng Việt rõ ràng.
 
+### Ảnh đại diện bài viết
+
+Tải ảnh tại trang sửa bài, bằng biểu mẫu riêng với nội dung bài viết.
+
+- Nhận một ảnh JPEG, PNG hoặc WebP, tối đa 5 MiB.
+- Kiểm tra định dạng thực bằng Sharp; không chỉ dựa vào tên tệp
+  hoặc MIME do trình duyệt gửi.
+- Giới hạn đầu vào 20 triệu pixel; từ chối ảnh động/nhiều trang.
+- Chuyển sang WebP, giữ tỷ lệ và thu nhỏ trong khung 1600 × 1600.
+- Lưu tại uploads/covers với tên UUID; database lưu tên trong cover_path.
+- Không đưa tệp uploads vào Git.
+- Ảnh được trả qua GET /media/posts/:id/cover, không mở uploads
+  bằng express.static.
+- Khách xem được ảnh bài đã xuất bản.
+- Với bài nháp, route yêu cầu ADMIN hoặc tác giả đang hoạt động.
+- Upload và gỡ ảnh yêu cầu đăng nhập, quyền trên bài và CSRF.
+- Thay, gỡ ảnh và xóa bài sử dụng transaction, khóa hàng bài viết.
+- Dọn ảnh cũ sau khi database commit.
+
+Đã kiểm chứng:
+
+- Tải ảnh, chuyển thành WebP và hiển thị trên trang sửa.
+- Thay ảnh cập nhật tên mới và xóa tệp cũ.
+- Gỡ ảnh đặt cover_path thành NULL và xóa tệp.
+- Xóa bài thử có ảnh đồng thời dọn tệp ảnh.
+- Khách nhận ảnh khi bài xuất bản, bị từ chối khi bài về nháp.
+- AUTHOR khác bị chặn thay/gỡ ảnh của người khác.
+- Upload thiếu CSRF trả 403; dữ liệu giả ảnh hoặc thiếu tệp trả 422.
+- Tệp vượt 5 MiB trả 413; gỡ ảnh thiếu CSRF trả 403.
+- Hiển thị ảnh trên trang chủ và trang chi tiết công khai.
+
+Database và filesystem không dùng chung transaction.
+Nếu dọn tệp cũ thất bại, thao tác database đã commit vẫn được giữ; ứng dụng ghi log và báo cần dọn tệp còn sót.
+Nếu kết quả commit không chắc chắn, giữ tệp mới để tránh xóa ảnh có thể đang được database tham chiếu.
+
+Chưa có công cụ tự động đối soát tệp còn sót.
+Chưa kiểm thử riêng ảnh động/nhiều trang, hướng EXIF
+hoặc các tình huống lỗi ghi tệp và commit không chắc chắn.
+
 ## Cấu hình và dữ liệu
 
-Không đưa mật khẩu, file môi trường thật, khóa riêng,
-log runtime hoặc dữ liệu database vào repository.
+Không đưa mật khẩu, file môi trường thật, khóa riêng, log runtime hoặc dữ liệu database vào repository.

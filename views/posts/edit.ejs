@@ -15,6 +15,67 @@
       formAction: '/manage/posts/' + post.id + '/update',
       submitLabel: 'Lưu thay đổi'
     }) %>
+    <section aria-labelledby="cover-heading">
+      <h2 id="cover-heading">Ảnh đại diện</h2>
+
+      <% if (post.cover_path) { %>
+        <p>Ảnh hiện tại:</p>
+
+        <img
+          src="/media/posts/<%= post.id %>/cover"
+          alt="Ảnh đại diện bài viết"
+          style="max-width: 100%; width: 480px; height: auto;"
+        >
+
+        <form
+          method="post"
+          action="/manage/posts/<%= post.id %>/cover/remove"
+          onsubmit="return confirm('Bạn có chắc muốn gỡ ảnh đại diện?');"
+        >
+          <input
+            type="hidden"
+            name="_csrf"
+            value="<%= csrfToken %>"
+          >
+          <button type="submit">Gỡ ảnh đại diện</button>
+        </form>
+      <% } else { %>
+        <p>Bài viết chưa có ảnh đại diện.</p>
+      <% } %>
+
+      <form
+        method="post"
+        action="/manage/posts/<%= post.id %>/cover"
+        enctype="multipart/form-data"
+      >
+        <input
+          type="hidden"
+          name="_csrf"
+          value="<%= csrfToken %>"
+        >
+
+        <p>
+          <label for="cover">Chọn ảnh JPEG, PNG hoặc WebP</label>
+          <input
+            id="cover"
+            name="cover"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            required
+          >
+        </p>
+
+        <p>
+          Tối đa 5 MiB và 20 triệu pixel.
+          Ảnh được chuyển sang WebP, giữ tỷ lệ và thu nhỏ
+          về kích thước tối đa 1600 × 1600 pixel.
+        </p>
+
+        <button type="submit">
+          <%= post.cover_path ? 'Thay ảnh đại diện' : 'Tải ảnh đại diện' %>
+        </button>
+      </form>
+    </section>
   </main>
 </body>
 </html>

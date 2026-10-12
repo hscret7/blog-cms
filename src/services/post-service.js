@@ -1,3 +1,4 @@
+const postCoverService = require('./post-cover-service');
 const postRepository = require('../repositories/post-repository');
 const categoryRepository = require('../repositories/category-repository');
 const {
@@ -261,34 +262,7 @@ async function unpublishPost(idParam, user) {
 }
 
 async function deletePost(idParam, user) {
-  const postResult = await getPostById(idParam, user);
-
-  if (!postResult.success) {
-    return postResult;
-  }
-
-  const post = postResult.data;
-
-  // Khi triển khai ảnh, phải bổ sung quy trình xử lý file trước khi xóa.
-  if (post.cover_path !== null) {
-    return {
-      success: false,
-      status: 409,
-      message:
-        'Bài viết có ảnh đại diện. Chức năng xóa ảnh chưa được triển khai.'
-    };
-  }
-
-  const affectedRows = await postRepository.remove(post.id, user);
-
-  if (affectedRows === 0) {
-    return notFound();
-  }
-
-  return {
-    success: true,
-    id: post.id
-  };
+  return postCoverService.deletePostWithCover(idParam, user);
 }
 
 module.exports = {

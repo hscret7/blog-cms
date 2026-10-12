@@ -5,6 +5,15 @@ const {
 } = require('../middlewares/auth');
 const { requireCsrf } = require('../middlewares/csrf');
 const {
+  requirePostAccess,
+  receiveCover
+} = require('../middlewares/cover-upload');
+
+const {
+  uploadCover,
+  removeCover
+} = require('../controllers/post-cover-controller');
+const {
   listPosts,
   showCreateForm,
   createPost,
@@ -93,6 +102,22 @@ router.post(
   parseForm,
   requireCsrf,
   deletePost
+);
+
+router.post(
+  '/manage/posts/:id/cover',
+  requirePostAccess,
+  receiveCover,
+  requireCsrf,
+  uploadCover
+);
+
+router.post(
+  '/manage/posts/:id/cover/remove',
+  requirePostAccess,
+  parseForm,
+  requireCsrf,
+  removeCover
 );
 
 router.use(handleFormError);

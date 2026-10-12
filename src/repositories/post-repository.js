@@ -171,10 +171,10 @@ async function unpublish(id, user) {
   return result.affectedRows;
 }
 
-async function remove(id, user) {
+async function remove(id, user, executor = pool) {
   validateActor(user);
 
-  const [result] = await pool.execute(
+  const [result] = await executor.execute(
     `DELETE FROM posts
      WHERE id = ?
        AND (? = 'ADMIN' OR author_id = ?)`,
@@ -182,6 +182,48 @@ async function remove(id, user) {
   );
 
   return result.affectedRows;
+}
+
+async function lockByIdForUser(id, user, connection) {
+  validateActor(user);
+
+  const [rows] = await connection.execute(
+    `SELECT id, author_id, cover_path, status
+     FROM posts
+     WHERE id = ?
+       AND (? = 'ADMIN' OR author_id = ?)
+     LIMIT 1
+     FOR UPDATE`,
+    [id, user.role, user.id]
+  );
+
+  return rows[0] || null;
+}
+
+async function updateCover(id, user, coverPath, connection) {
+  validateActor(user);
+
+  const [result] = await connection.execute(
+    `UPDATE posts
+     SET cover_path = ?
+     WHERE id = ?
+       AND (? = 'ADMIN' OR author_id = ?)`,
+    [coverPath, id, user.role, user.id]
+  );
+
+  return result.affectedRows;
+}
+
+async function findCoverById(id) {
+  const [rows] = await pool.execute(
+    `SELECT id, author_id, cover_path, status
+     FROM posts
+     WHERE id = ?
+     LIMIT 1`,
+    [id]
+  );
+
+  return rows[0] || null;
 }
 
 module.exports = {
@@ -192,5 +234,8 @@ module.exports = {
   updateContent,
   publish,
   unpublish,
-  remove
+  remove,
+  lockByIdForUser,
+  updateCover,
+  findCoverById
 };

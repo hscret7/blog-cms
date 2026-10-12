@@ -5,6 +5,7 @@ const categoryRoutes = require('./routes/category-routes');
 const adminUserRoutes = require('./routes/admin-user-routes');
 const postRoutes = require('./routes/post-routes');
 const publicPostRoutes = require('./routes/public-post-routes');
+const coverRoutes = require('./routes/cover-routes');
 const pool = require('./config/database');
 const { sessionMiddleware } = require('./config/session');
 
@@ -54,6 +55,7 @@ app.use(publicPostRoutes);
 
 // Các chức năng tài khoản và quản lý sử dụng session.
 app.use(sessionMiddleware);
+app.use(coverRoutes);
 app.use(authRoutes);
 app.use(categoryRoutes);
 app.use(adminUserRoutes);

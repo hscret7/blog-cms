@@ -20,7 +20,15 @@
       </p>
 
       <p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p>
-
+      <% if (post.cover_path) { %>
+        <p>
+          <img
+            src="/media/posts/<%= post.id %>/cover"
+            alt="Ảnh đại diện: <%= post.title %>"
+            style="max-width: 100%; width: 960px; height: auto;"
+          >
+        </p>
+      <% } %>
       <div style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= post.content %></div>
     </article>
 

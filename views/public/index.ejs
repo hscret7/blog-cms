@@ -54,6 +54,16 @@
           <h2>
             <a href="/posts/<%= post.slug %>"><%= post.title %></a>
           </h2>
+          <% if (post.cover_path) { %>
+            <a href="/posts/<%= post.slug %>">
+              <img
+                src="/media/posts/<%= post.id %>/cover"
+                alt="Ảnh đại diện: <%= post.title %>"
+                loading="lazy"
+                style="max-width: 100%; width: 320px; height: auto;"
+              >
+            </a>
+          <% } %>
           <p>
             Tác giả: <%= post.author_name %> |
             Danh mục: <%= post.category_name %>
