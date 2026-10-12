@@ -66,7 +66,8 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu truy cập trang yêu cầu xác thực.
 - Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
 
-Chưa đóng gói Express bằng Docker hoặc triển khai Nginx reverse proxy, giám sát và log tập trung.
+Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
+Chưa triển khai Nginx reverse proxy, giám sát và log tập trung.
 
 
 ### Kiểm thử quản lý danh mục
@@ -240,6 +241,84 @@ Chưa kiểm chứng riêng từng nhánh của quy tắc ADMIN cuối cùng.
 Hiện chưa hỗ trợ xóa người dùng hoặc đổi mật khẩu qua giao diện.
 
 ## Hướng dẫn chạy
+
+### Chạy ứng dụng bằng Docker Compose
+
+Cần có `.env` theo `.env.example`, với mật khẩu và SESSION_SECRET thật.
+Không đưa `.env` vào Git hoặc image.
+
+Ảnh được lưu bằng bind mount từ `./uploads` vào `/app/uploads`.
+Chuẩn bị thư mục nếu chưa có:
+
+```bash
+mkdir -p uploads/covers
+```
+
+Container app chạy UID/GID 1000. Thư mục ảnh phải cho tài khoản này
+đọc và ghi. Môi trường WSL đã kiểm chứng có UID/GID 1000.
+
+Kiểm tra cấu hình:
+
+```bash
+docker compose config --quiet
+```
+
+Build image:
+
+```bash
+docker build -t blog-cms-app:local .
+```
+
+Môi trường hiện tại sử dụng legacy builder, chưa có Buildx.
+Lệnh build trên đã được kiểm chứng.
+
+Nếu Express đang chạy trực tiếp trong WSL, dừng bằng Ctrl + C
+trước khi khởi động container vì cùng sử dụng cổng host 18090.
+
+Khởi động các dịch vụ bằng image đã build:
+
+```bash
+docker compose up -d --no-build --wait --wait-timeout 240
+```
+
+Truy cập website: http://localhost:18090
+Truy cập phpMyAdmin: http://localhost:18091
+
+Trong container, app kết nối MySQL tại `mysql:3306`.
+Khi chạy trực tiếp trong WSL, app dùng `127.0.0.1:13319`.
+
+Xem trạng thái và log:
+
+```bash
+docker compose ps
+docker compose logs --tail=30 app
+```
+
+Sau khi sửa mã ứng dụng, build lại image và cập nhật container:
+
+```bash
+docker build -t blog-cms-app:local .
+docker compose up -d --no-build --no-deps --wait --wait-timeout 240 app
+```
+
+Đã kiểm chứng:
+
+- App chạy trong Compose, liveness/readiness trả HTTP 200.
+- Argon2 và Sharp hoạt động trong runtime image.
+- Trang công khai, trang sửa bài và ảnh hiện có hoạt động.
+- Tải/thay ảnh được khi filesystem chính chỉ đọc.
+- Tên ảnh và SHA256 không đổi sau khi tạo lại container app.
+- App chạy non-root, UID 1000.
+- Root filesystem chỉ đọc; drop toàn bộ capability.
+- no-new-privileges có hiệu lực.
+- SIGTERM đóng tài nguyên và ứng dụng thoát với mã 0.
+
+MySQL dùng named volume; ảnh dùng bind mount.
+Dữ liệu được lưu ngoài container nhưng vẫn cần sao lưu riêng.
+
+Base image hiện dùng tag `node:24-bookworm` và
+`node:24-bookworm-slim`. Bản đã build được kiểm chứng chạy
+Node.js 24.21.0; các tag này có thể thay đổi theo thời gian.
 
 ### Chạy bản phát triển trong WSL
 

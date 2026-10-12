@@ -1,4 +1,65 @@
 services:
+  app:
+    image: blog-cms-app:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Chua_dat_MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER:?Chua_dat_MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Chua_dat_MYSQL_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET:?Chua_dat_SESSION_SECRET}
+
+    ports:
+      - "127.0.0.1:18090:3000"
+
+    volumes:
+      - type: bind
+        source: ./uploads
+        target: /app/uploads
+        bind:
+          create_host_path: false
+
+    networks:
+      - database
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/health/ready', { signal: AbortSignal.timeout(3000) }).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
   mysql:
     image: mysql:8.4
     restart: unless-stopped

@@ -1,0 +1,28 @@
+# Dependencies của máy phát triển
+node_modules/
+
+# Git
+.git/
+
+# Cấu hình riêng và bí mật
+.env
+.env.*
+!.env.example
+secrets/
+**/*.key
+**/*.pem
+
+# Dữ liệu chạy thực tế
+uploads/
+runtime/
+logs/
+backups/
+**/*.log
+
+# Kết quả build và kiểm thử
+dist/
+coverage/
+
+# Tệp hệ điều hành
+.DS_Store
+Thumbs.db
