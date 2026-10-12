@@ -4,15 +4,8 @@ const { getCsrfToken } = require('../middlewares/csrf');
 async function listCategories(req, res) {
   res.set('Cache-Control', 'no-store');
 
-  const categories = await categoryService.getAllCategories();
-  const csrfToken = getCsrfToken(req);
-
-  return res.render('categories/index', {
-    user: req.user,
-    categories,
-    csrfToken,
-    errorMessage: null
-  });
+  const data = await require('../services/list-service').getPage('categories', req.user, req.query);
+  return res.render('categories/index', { user: req.user, csrfToken: getCsrfToken(req), errorMessage: null, ...data, categories: data.rows });
 }
 
 function showCreateForm(req, res) {
@@ -36,7 +29,7 @@ function showCreateForm(req, res) {
 async function createCategory(req, res) {
   res.set('Cache-Control', 'no-store');
 
-  const result = await categoryService.createCategory(req.body);
+  const result = await categoryService.createCategory(req.body, req.user);
 
   if (!result.success) {
     const csrfToken = getCsrfToken(req);
@@ -92,7 +85,7 @@ async function updateCategory(req, res) {
   res.set('Cache-Control', 'no-store');
 
   const { id } = req.params;
-  const result = await categoryService.updateCategory(id, req.body);
+  const result = await categoryService.updateCategory(id, req.body, req.user);
 
   if (!result.success) {
     if (result.status === 400 || result.status === 404) {
@@ -126,7 +119,7 @@ async function deleteCategory(req, res) {
   res.set('Cache-Control', 'no-store');
 
   const { id } = req.params;
-  const result = await categoryService.deleteCategory(id);
+  const result = await categoryService.deleteCategory(id, req.user);
 
   if (!result.success) {
     if (result.status === 400 || result.status === 404) {

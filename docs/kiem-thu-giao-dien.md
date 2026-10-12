@@ -2,28 +2,17 @@
 
 ## Phạm vi
 
-Giao diện dùng CSS/JavaScript nội bộ, không cần CDN hoặc dependency mới.
+Giao diện dùng CSS/JavaScript nội bộ, không cần CDN.
 Menu quản lý được hiển thị theo vai trò hiện tại của tài khoản đã xác thực.
-Trang công khai giữ cơ chế không dùng session; liên kết Không gian quản lý
-đưa người đọc đến trang tài khoản, hoặc đăng nhập nếu chưa có phiên.
+Trang công khai nhận diện session nếu đã đăng nhập; CSS/JS vẫn được phục vụ trước session.
 Ẩn menu không thay thế kiểm tra quyền trên server.
 
-## Chạy bản giao diện trong WSL
+## Cập nhật bản mới trong WSL
 
-Từ thư mục gốc dự án, sau khi lấy nhánh giao diện:
-
-```bash
-nvm use
-npm ci
-node --test tests/*.test.js
-git diff --check
-docker build -t blog-cms-app:local .
-docker compose up -d --no-build --no-deps --wait --wait-timeout 240 app
-```
-
-Không cần sửa database, migration, secrets hoặc volume.
-Mở http://localhost:18090 và dùng Ctrl + F5 nếu trình duyệt giữ CSS cũ.
-Docker image cần build lại vì mã, views và public được COPY vào image.
+Nhánh hiện tại đã mở rộng tài khoản và chức năng cộng đồng, cần migration.
+**Không dùng hướng dẫn build cũ trước khi nâng database.** Thực hiện toàn bộ
+thứ tự lấy mã, sao lưu, migration 003/004, SMTP và build trong
+[Cập nhật cộng đồng](cap-nhat-cong-dong.md).
 
 ## Thao tác từ giao diện
 
@@ -67,7 +56,7 @@ Chỉ cần mở trang chủ http://localhost:18090. Các bước sau đều dù
 
 Hai bộ test mới:
 
-- `ui-render.test.js`: render đủ 18 trang EJS; menu ADMIN/AUTHOR;
+- `ui-render.test.js`: render 21 trang EJS và sáu chế độ biểu mẫu tài khoản; menu ADMIN/AUTHOR/READER;
   escape dữ liệu; liên kết ảnh, bộ lọc và phân trang; POST/CSRF; form ảnh riêng.
 - `ui-assets.test.js`: chạy HTTP trên loopback với app wiring thật nhưng
   router/database/session giả lập; CSS/JS được trả trước session;
@@ -83,3 +72,5 @@ Kiểm tra bằng Chromium với fixture (không dùng MySQL): 11 trang chính
 ở chiều rộng 1440px và 390px, không tràn ngang toàn trang,
 không có lỗi JavaScript; nút hiện/ẩn mật khẩu hoạt động.
 Đã xem ảnh chụp trang chủ, tài khoản và trang chủ mobile.
+
+Các test/luồng mới và giới hạn kiểm chứng được ghi ở [Cập nhật cộng đồng](cap-nhat-cong-dong.md).

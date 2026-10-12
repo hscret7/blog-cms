@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= mode === 'notifications' ? 'Thông báo' : mode === 'audit' ? 'Nhật ký' : 'Bình luận' %> | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=2"></head><body><%- include('../partials/header') %>
+<main id="main-content">
+<h1><%= mode === 'notifications' ? 'Thông báo của bạn' : mode === 'audit' ? 'Nhật ký hoạt động' : mode === 'moderation' ? 'Quản lý bình luận' : mode === 'authored' ? 'Bình luận trên bài của tôi' : 'Bình luận của tôi' %></h1>
+<form class="filter-bar" method="get">
+  <% if(mode !== 'notifications') { %><p><label for="q">Tìm kiếm</label><input id="q" name="q" value="<%= filters.q %>"></p><% } %>
+  <% if(['mine','moderation','authored'].includes(mode)) { %><p><label for="status">Trạng thái</label><select id="status" name="status"><option value="">Tất cả</option><% for(const [key,label] of [['PENDING','Chờ duyệt'],['APPROVED','Đã duyệt'],['HIDDEN','Đã ẩn']]) { %><option value="<%= key %>" <%= filters.status===key?'selected':'' %>><%= label %></option><% } %></select></p><% } %>
+  <% if(mode==='notifications') { %><p><label for="unread">Lọc thông báo</label><select id="unread" name="unread"><option value="">Tất cả</option><option value="1" <%= query.unread==='1'?'selected':'' %>>Chưa đọc</option></select></p><% } %>
+  <p><label for="sort">Thứ tự</label><select id="sort" name="sort"><option value="newest" <%= filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select></p><button>Lọc</button>
+  <% if(mode==='audit') { %>
+    <% for(const [key,label,options,field] of [['actor','Người thực hiện',typeof actorOptions !== 'undefined'?actorOptions:[],'id'],['action','Thao tác',typeof actionOptions !== 'undefined'?actionOptions:[],'action'],['type','Đối tượng',typeof typeOptions !== 'undefined'?typeOptions:[],'object_type']]) { %><p><label for="<%= key %>"><%= label %></label><select id="<%= key %>" name="<%= key %>"><option value="">Tất cả</option><% for(const option of options) { %><option value="<%= option[field] %>" <%= query[key]===String(option[field])?'selected':'' %>><%= key==='actor'?option.name:option[field] %></option><% } %></select></p><% } %>
+    <% for(const [key,label] of [['from','Từ ngày (UTC)'],['to','Đến ngày (UTC)']]) { %><p><label for="<%= key %>"><%= label %></label><input id="<%= key %>" name="<%= key %>" type="date" value="<%= typeof query[key]==='string'?query[key]:'' %>"></p><% } %>
+  <% } %>
+</form>
+<p>Có <%= total %> kết quả.</p>
+<% if(mode==='notifications') { %><form method="post" action="/notifications/all/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Đánh dấu tất cả đã đọc</button></form><% } %>
+<% if(!rows.length) { %><p class="empty-state">Chưa có kết quả phù hợp.</p><% } %>
+<% rows.forEach(row=>{ %>
+<section class="comment-card">
+  <% if(mode==='audit') { %><h2><%= row.action %></h2><p>Người thực hiện: <%= row.name || 'Hệ thống' %> · <%= row.object_type %> #<%= row.object_id %></p>
+  <% } else if(mode==='notifications') { %>
+    <h2><%= row.message %></h2><p><span class="badge"><%= row.read_at?'Đã đọc':'Chưa đọc' %></span></p><a href="<%= row.target_path %>">Xem nội dung →</a><% if(!row.read_at) { %><form method="post" action="/notifications/<%= row.id %>/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Đánh dấu đã đọc</button></form><% } %>
+  <% } else { %>
+    <h2><%= row.title %></h2><p><%= row.name %> · <span class="badge"><%= {PENDING:'Chờ duyệt',APPROVED:'Đã duyệt',HIDDEN:'Đã ẩn'}[row.status] %></span></p><p class="post-content"><%= row.content %></p>
+    <% if(mode !== 'authored') { %>
+    <% if(mode==='mine') { %><details><summary>Sửa bình luận</summary><form method="post" action="/my/comments/<%= row.id %>/edit"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="content-<%= row.id %>">Nội dung</label><textarea id="content-<%= row.id %>" name="content" required><%= row.content %></textarea><button>Lưu và gửi lại để duyệt</button></form></details>
+    <% } else { %><% for(const [status,label] of [['APPROVED','Duyệt'],['HIDDEN','Ẩn']]) { %><form method="post" action="/admin/comments/<%= row.id %>/moderate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= status %>"><button><%= label %></button></form><% } %><% } %>
+    <form method="post" action="<%= mode==='mine'?'/my/comments/':'/admin/comments/' %><%= row.id %>/delete" onsubmit="return confirm('Xóa bình luận này?');"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Xóa</button></form>
+    <% } %>
+  <% } %>
+  <small><%= new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}).format(row.created_at) %></small>
+</section>
+<% }); %>
+<nav class="pagination" aria-label="Phân trang"><% if(previousUrl) { %><a href="<%= previousUrl %>">← Trang trước</a><% } %><p>Trang <%= filters.page %> / <%= totalPages %></p><% if(nextUrl) { %><a href="<%= nextUrl %>">Trang sau →</a><% } %></nav>
+</main><%- include('../partials/footer') %></body></html>

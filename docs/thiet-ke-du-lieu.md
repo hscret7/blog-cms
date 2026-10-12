@@ -29,7 +29,7 @@ Các bảng nghiệp vụ dùng InnoDB và bộ ký tự utf8mb4.
 | name | VARCHAR(100) | Bắt buộc |
 | email | VARCHAR(254) | Bắt buộc, duy nhất |
 | password_hash | VARCHAR(255) | Bắt buộc, chứa mật khẩu đã băm |
-| role | ENUM('ADMIN', 'AUTHOR') | Bắt buộc |
+| role | ENUM('ADMIN', 'AUTHOR', 'READER') | Bắt buộc |
 | status | ENUM('ACTIVE', 'LOCKED') | Bắt buộc, mặc định ACTIVE |
 | created_at | DATETIME | Bắt buộc |
 | updated_at | DATETIME | Bắt buộc |
@@ -40,7 +40,7 @@ Quy tắc:
 - Phiên bản đầu coi email không phân biệt chữ hoa và chữ thường.
 - Chuẩn hóa email nhất quán trước khi kiểm tra và lưu.
 - Tên không được rỗng sau khi loại bỏ khoảng trắng đầu/cuối.
-- Quản trị viên tạo tài khoản; chưa có đăng ký công khai.
+- Quản trị viên cấp quyền; đăng ký công khai luôn tạo READER.
 - Phiên bản đầu khóa tài khoản thay vì xóa.
 - Backend kiểm tra trạng thái hiện tại của tài khoản khi sử dụng session.
 - Không cho phép khóa hoặc hạ quyền quản trị viên đang thao tác
@@ -175,3 +175,21 @@ LIKE '%từ khóa%'.
 - Tài khoản bị khóa không tiếp tục sử dụng quyền.
 - Các trạng thái xuất bản và published_at đúng quy tắc.
 - Dữ liệu và ảnh còn tồn tại sau khi tạo lại container phù hợp.
+## Bổ sung qua migration 003 và 004
+
+users thêm email_verified_at (NULL khi chưa xác minh), session_version để
+hủy hiệu lực các phiên cũ khi đổi email/mật khẩu. Tài khoản đã có được coi
+là xác minh từ trước. account_tokens lưu SHA256 của token 32 byte ngẫu nhiên;
+phân biệt VERIFY_EMAIL (24 giờ) và RESET_PASSWORD (30 phút); token một lần.
+
+comments liên kết post/user với status PENDING/APPROVED/HIDDEN, nội dung
+văn bản tối đa 2.000 ký tự. category_follows có khóa kép user/category.
+notifications thuộc một user và có read_at, đường dẫn nội bộ.
+audit_events giữ actor/action/object/time, không lưu bí mật.
+post_versions giữ nội dung mỗi lần tạo/sửa và bản đầu của các bài cũ.
+Không FK post_versions/audit_events đến posts để giữ vết khi bài bị xóa;
+AUTHOR vẫn phải có quyền trên bài hiện tại mới xem lịch sử.
+
+Xóa bài dọn comments trong transaction, dọn ảnh sau commit. Xóa danh mục
+rỗng dọn follows trong transaction; bài liên kết vẫn chặn bằng FK RESTRICT.
+DDL phải chạy một lần, có backup, theo [hướng dẫn cập nhật](cap-nhat-cong-dong.md).

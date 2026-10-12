@@ -44,6 +44,7 @@
     <label for="role">Vai trò</label>
     <select id="role" name="role" required>
       <option value="">Chọn vai trò</option>
+      <option value="READER" <%= formData.role === 'READER' ? 'selected' : '' %>>READER — Độc giả</option>
       <option
         value="AUTHOR"
         <%= formData.role === 'AUTHOR' ? 'selected' : '' %>
@@ -69,6 +70,7 @@
         required
       >
       <p>Từ 15 đến 128 ký tự. Không tự bỏ khoảng trắng.</p>
+      <button type="button" class="password-toggle" data-toggle-password="password" aria-pressed="false">Hiện mật khẩu</button>
       <% if (errors.password) { %>
         <p role="alert"><%= errors.password %></p>
       <% } %>
@@ -83,6 +85,7 @@
         autocomplete="new-password"
         required
       >
+      <button type="button" class="password-toggle" data-toggle-password="password_confirmation" aria-pressed="false">Hiện mật khẩu</button>
       <% if (errors.password_confirmation) { %>
         <p role="alert"><%= errors.password_confirmation %></p>
       <% } %>

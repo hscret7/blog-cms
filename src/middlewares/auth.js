@@ -14,7 +14,8 @@ async function requireAuth(req, res, next) {
   if (
     !user ||
     user.status !== 'ACTIVE' ||
-    !['ADMIN', 'AUTHOR'].includes(user.role)
+    !['ADMIN', 'AUTHOR', 'READER'].includes(user.role) ||
+    (req.session.authVersion || 0) !== user.session_version
   ) {
     await new Promise((resolve, reject) => {
       req.session.destroy((error) => {
@@ -44,7 +45,7 @@ async function requireAuth(req, res, next) {
 function requireRole(...allowedRoles) {
   if (
     allowedRoles.length === 0 ||
-    allowedRoles.some((role) => !['ADMIN', 'AUTHOR'].includes(role))
+    allowedRoles.some((role) => !['ADMIN', 'AUTHOR', 'READER'].includes(role))
   ) {
     throw new Error('Cấu hình vai trò được phép không hợp lệ.');
   }
@@ -68,7 +69,28 @@ function requireRole(...allowedRoles) {
   };
 }
 
+async function optionalAuth(req, res, next) {
+  const id = req.session?.userId;
+  if (Number.isInteger(id) && id > 0) {
+    const user = await findById(id);
+    if (user && user.status === 'ACTIVE' &&
+        ['ADMIN', 'AUTHOR', 'READER'].includes(user.role) &&
+        (req.session.authVersion || 0) === user.session_version) {
+      req.user = user;
+      res.locals.currentUser = user;
+    }
+  }
+  next();
+}
+function requireVerified(req, res, next) {
+  if (!req.user?.email_verified_at) return res.status(403).render('public/error', {
+    statusCode: 403, message: 'Hãy xác minh email trong trang Tài khoản trước khi thực hiện thao tác.', errors: {}
+  });
+  next();
+}
 module.exports = {
+  optionalAuth,
+  requireVerified,
   requireAuth,
   requireRole
 };

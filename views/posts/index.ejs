@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý bài viết | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=1">
-  <script src="/js/ui.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/site.css?v=2">
+  <script src="/js/ui.js?v=2" defer></script>
 </head>
 <body>
   <%- include('../partials/header') %>
   <main id="main-content">
     <h1>Quản lý bài viết</h1>
+    <% if (typeof query !== 'undefined') { %><%- include('../partials/list-filters', { kind: 'posts' }) %><% } %>
     <p>Xin chào, <%= user.name %>.</p>
 
     <% if (user.role === 'ADMIN') { %>
@@ -20,7 +21,7 @@
     <% } %>
 
     <p class="page-actions">
-      <a href="/manage/posts/new">Tạo bài nháp</a> |
+      <a href="/manage/posts/new">Tạo bài nháp</a> | <a href="/manage/comments">Bình luận trên bài của tôi</a> |
       <a href="/account">Về tài khoản</a>
     </p>
 
@@ -51,6 +52,7 @@
               <td><span class="badge <%= post.status === 'DRAFT' ? 'badge-draft' : '' %>"><%= post.status === 'DRAFT' ? 'Nháp' : 'Đã xuất bản' %></span></td>
               <td>
                 <a href="/manage/posts/<%= post.id %>/edit">Sửa / ảnh</a>
+                <a href="/manage/posts/<%= post.id %>/history">Lịch sử</a>
                 <% if (post.status === 'PUBLISHED') { %><a href="/posts/<%= post.slug %>">Xem bài</a><% } %>
 
                 <% if (post.status === 'DRAFT') { %>
@@ -90,17 +92,7 @@
       </div>
     <% } %>
 
-    <nav class="pagination" aria-label="Phân trang bài viết">
-      <p>Trang <%= page %> / <%= totalPages %></p>
-
-      <% if (page > 1) { %>
-        <a href="/manage/posts?page=<%= page - 1 %>">Trang trước</a>
-      <% } %>
-
-      <% if (page < totalPages) { %>
-        <a href="/manage/posts?page=<%= page + 1 %>">Trang sau</a>
-      <% } %>
-    </nav>
+    <% if (typeof previousUrl !== 'undefined') { %><%- include('../partials/pagination') %><% } %>
   </main>
   <%- include('../partials/footer') %>
 </body>

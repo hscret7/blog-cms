@@ -16,8 +16,8 @@ async function findAll() {
   return rows;
 }
 
-async function findById(id) {
-  const [rows] = await pool.execute(
+async function findById(id, executor = pool) {
+  const [rows] = await executor.execute(
     `SELECT
        id,
        name,
@@ -52,8 +52,8 @@ async function findBySlug(slug) {
   return rows[0] || null;
 }
 
-async function create({ name, slug, description }) {
-  const [result] = await pool.execute(
+async function create({ name, slug, description }, executor = pool) {
+  const [result] = await executor.execute(
     `INSERT INTO categories (name, slug, description)
      VALUES (?, ?, ?)`,
     [name, slug, description]
@@ -62,8 +62,8 @@ async function create({ name, slug, description }) {
   return result.insertId;
 }
 
-async function update(id, { name, slug, description }) {
-  const [result] = await pool.execute(
+async function update(id, { name, slug, description }, executor = pool) {
+  const [result] = await executor.execute(
     `UPDATE categories
      SET name = ?, slug = ?, description = ?
      WHERE id = ?`,
@@ -73,8 +73,9 @@ async function update(id, { name, slug, description }) {
   return result.affectedRows;
 }
 
-async function remove(id) {
-  const [result] = await pool.execute(
+async function remove(id, executor = pool) {
+  await executor.execute('DELETE FROM category_follows WHERE category_id = ?', [id]);
+  const [result] = await executor.execute(
     `DELETE FROM categories
      WHERE id = ?`,
     [id]

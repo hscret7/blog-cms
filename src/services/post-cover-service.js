@@ -1,3 +1,4 @@
+const activity = require('./activity-service');
 const pool = require('../config/database');
 const repository = require('../repositories/post-repository');
 const { validatePostId } = require('../validators/post-validator');
@@ -148,6 +149,7 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
         connection
       );
     } else if (operation === 'delete') {
+      await connection.execute('DELETE FROM comments WHERE post_id = ?', [post.id]);
       const affectedRows = await repository.remove(
         post.id,
         currentUser,
@@ -160,6 +162,8 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     } else {
       throw new Error('Thao tác ảnh không hợp lệ.');
     }
+
+    await activity.record(connection, currentUser.id, operation === 'delete' ? 'POST_DELETE' : operation === 'replace' ? 'COVER_REPLACE' : 'COVER_REMOVE', 'post', post.id);
 
     commitAttempted = true;
     await connection.commit();

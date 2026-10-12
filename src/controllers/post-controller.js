@@ -20,20 +20,8 @@ function getFormData(body) {
 }
 
 async function listPosts(req, res) {
-  const result = await postService.getPostPage(
-    req.user,
-    req.query.page
-  );
-
-  if (!result.success) {
-    return renderError(res, result);
-  }
-
-  return res.render('posts/index', {
-    user: req.user,
-    csrfToken: getCsrfToken(req),
-    ...result.data
-  });
+  const data = await require('../services/list-service').getPage('posts', req.user, req.query);
+  return res.render('posts/index', { user: req.user, csrfToken: getCsrfToken(req), ...data, posts: data.rows });
 }
 
 async function showCreateForm(req, res) {

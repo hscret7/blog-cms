@@ -79,6 +79,7 @@ async function getCover(req, res) {
     if (
       !viewer ||
       viewer.status !== 'ACTIVE' ||
+      (req.session.authVersion || 0) !== viewer.session_version ||
       !['ADMIN', 'AUTHOR'].includes(viewer.role) ||
       (viewer.role !== 'ADMIN' && viewer.id !== post.author_id)
     ) {

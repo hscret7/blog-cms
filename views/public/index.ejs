@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Blog CMS — Câu chuyện và ý tưởng</title>
-  <link rel="stylesheet" href="/css/site.css?v=1">
-  <script src="/js/ui.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/site.css?v=2">
+  <script src="/js/ui.js?v=2" defer></script>
 </head>
 <body>
   <%- include('../partials/header') %>
@@ -15,8 +15,9 @@
       <div class="hero-art" aria-hidden="true"><div class="hero-sheet"><span>“</span><strong>Mỗi ý tưởng<br>đều có một câu chuyện.</strong><i></i><i></i><i></i></div></div>
     </section>
     <form class="filter-bar" action="/" method="get" aria-label="Tìm và lọc bài viết">
-      <p><label for="q">Tìm theo tiêu đề</label><input id="q" name="q" type="search" placeholder="Bạn muốn đọc điều gì?" value="<%= filters.q %>"></p>
+      <p><label for="q">Tìm bài viết</label><input id="q" name="q" type="search" placeholder="Bạn muốn đọc điều gì?" value="<%= filters.q %>"></p>
       <p><label for="category_id">Danh mục</label><select id="category_id" name="category_id"><option value="">Tất cả danh mục</option><% categories.forEach(function(category) { %><option value="<%= category.id %>" <%= category.id === filters.category_id ? 'selected' : '' %>><%= category.name %></option><% }); %></select></p>
+      <p><label for="sort">Sắp xếp</label><select id="sort" name="sort"><% for(const [key,label]of [['newest','Mới nhất'],['oldest','Cũ nhất'],['title','Tiêu đề A–Z']]) { %><option value="<%= key %>" <%= filters.sort===key?'selected':'' %>><%= label %></option><% } %></select></p>
       <button type="submit">Tìm kiếm</button><a class="button button-secondary" href="/">Xóa bộ lọc</a>
     </form>
     <div class="section-heading"><h2><%= filters.q || filters.category_id ? 'Kết quả tìm kiếm' : 'Bài viết mới nhất' %></h2><span class="count-label">Tìm thấy <%= total %> bài viết</span></div>

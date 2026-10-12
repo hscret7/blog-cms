@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tài khoản | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=1">
+  <link rel="stylesheet" href="/css/site.css?v=2">
 </head>
 <body>
   <%- include('partials/header') %>
@@ -13,13 +13,22 @@
     <div class="account-layout">
       <section class="profile-card" aria-labelledby="profile-heading">
         <div class="avatar" aria-hidden="true"><%= Array.from(user.name)[0] || 'B' %></div><h2 id="profile-heading">Tài khoản của bạn</h2>
-        <span class="badge"><%= user.role === 'ADMIN' ? 'Quản trị viên' : 'Tác giả' %></span>
+        <span class="badge"><%= user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'AUTHOR' ? 'Tác giả' : 'Độc giả' %></span>
         <dl><dt>Tên hiển thị</dt><dd><%= user.name %></dd><dt>Email</dt><dd><%= user.email %></dd><dt>Vai trò</dt><dd><%= user.role %></dd><dt>Trạng thái</dt><dd><%= user.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa' %></dd></dl>
+        <p><a href="/account/profile">Sửa tên hiển thị</a> · <a href="/account/password">Đổi mật khẩu</a></p>
+        <% if (!user.email_verified_at) { %>
+          <p role="alert">Email chưa được xác minh. Bạn cần xác minh để bình luận và theo dõi chủ đề.</p>
+          <form action="/account/verify-email" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit">Gửi lại email xác minh</button></form>
+        <% } %>
         <form action="/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary" type="submit">Đăng xuất</button></form>
       </section>
       <div class="action-grid">
+        <section class="action-card"><h2>Bình luận của tôi</h2><p>Xem trạng thái, sửa hoặc xóa bình luận đã gửi.</p><a class="button" href="/my/comments">Quản lý bình luận</a></section>
+        <section class="action-card"><h2>Chủ đề & thông báo</h2><p>Theo dõi danh mục và nhận tin mới trong website.</p><a class="button" href="/following">Theo dõi chủ đề</a><a href="/notifications">Xem thông báo</a></section>
+        <% if (['ADMIN','AUTHOR'].includes(user.role)) { %>
         <section class="action-card"><span class="action-icon" aria-hidden="true">✎</span><h2>Bài viết</h2><p>Tạo bài nháp, chỉnh sửa, xuất bản và quản lý ảnh đại diện.</p><a class="button" href="/manage/posts">Quản lý bài viết →</a></section>
         <section class="action-card"><span class="action-icon" aria-hidden="true">+</span><h2>Ý tưởng mới</h2><p>Bắt đầu với một bài nháp. Bạn có thể xuất bản khi nội dung đã sẵn sàng.</p><a class="button button-secondary" href="/manage/posts/new">Tạo bài nháp</a></section>
+        <% } %>
         <% if (user.role === 'ADMIN') { %>
           <section class="action-card"><span class="action-icon" aria-hidden="true">≡</span><h2>Danh mục</h2><p>Thêm, sửa và sắp xếp các chủ đề của blog.</p><a class="button button-secondary" href="/admin/categories">Quản lý danh mục</a></section>
           <section class="action-card"><span class="action-icon" aria-hidden="true">◎</span><h2>Người dùng</h2><p>Tạo tài khoản, cập nhật vai trò và khóa hoặc mở khóa người dùng.</p><a class="button button-secondary" href="/admin/users">Quản lý người dùng</a></section>

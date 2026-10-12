@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý danh mục | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=1">
-  <script src="/js/ui.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/site.css?v=2">
+  <script src="/js/ui.js?v=2" defer></script>
 </head>
 <body>
   <%- include('../partials/header') %>
   <main id="main-content">
     <h1>Quản lý danh mục</h1>
+    <% if (typeof query !== 'undefined') { %><%- include('../partials/list-filters', { kind: 'categories' }) %><% } %>
 
     <p>Xin chào, <%= user.name %>.</p>
 
@@ -62,6 +63,7 @@
       </table>
       </div>
     <% } %>
+    <% if (typeof page !== 'undefined') { %><%- include('../partials/pagination') %><% } %>
   </main>
   <%- include('../partials/footer') %>
 </body>

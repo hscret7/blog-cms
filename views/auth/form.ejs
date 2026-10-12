@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><%= title %> | Blog CMS</title><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="/css/site.css?v=2"><script src="/js/ui.js?v=2" defer></script></head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="account-form-page">
+    <h1><%= title %></h1>
+    <% if (result.message) { %><p role="<%= result.success ? 'status' : 'alert' %>"><%= result.message %></p><% } %>
+    <% if (result.errors) { %><ul><% Object.values(result.errors).forEach(message => { %><li><%= message %></li><% }); %></ul><% } %>
+    <% if (!result.success) { %>
+      <form class="form-panel" action="<%= action %>" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% if (['verify','reset'].includes(mode)) { %><input type="hidden" name="token" id="email-token" value="<%= token %>"><p>Hãy mở liên kết được gửi đến email của bạn. Liên kết chỉ có hiệu lực một lần.</p><% } %>
+        <% if (['register','profile'].includes(mode)) { %><p><label for="name">Tên hiển thị</label><input id="name" name="name" value="<%= data.name || '' %>" required></p><% } %>
+        <% if (['register','forgot','profile'].includes(mode)) { %><p><label for="email">Email</label><input id="email" type="email" name="email" maxlength="254" value="<%= data.email || '' %>" autocomplete="email" required></p><% } %>
+        <% if (['password','profile'].includes(mode)) { %><p><label for="current-password">Mật khẩu hiện tại<%= mode === 'profile' ? ' (chỉ cần khi đổi email)' : '' %></label><input id="current-password" type="password" name="current_password" autocomplete="current-password" <%= mode === 'password' ? 'required' : '' %>><button class="password-toggle" type="button" data-toggle-password="current-password" aria-pressed="false">Hiện mật khẩu</button></p><% } %>
+        <% if (['register','reset','password'].includes(mode)) { %>
+          <p><label for="new-password">Mật khẩu mới (15–128 ký tự)</label><input id="new-password" type="password" name="password" autocomplete="new-password" required><button class="password-toggle" type="button" data-toggle-password="new-password" aria-pressed="false">Hiện mật khẩu</button></p>
+          <p><label for="password-confirmation">Nhập lại mật khẩu</label><input id="password-confirmation" type="password" name="password_confirmation" autocomplete="new-password" required><button class="password-toggle" type="button" data-toggle-password="password-confirmation" aria-pressed="false">Hiện mật khẩu</button></p>
+        <% } %>
+        <p><button type="submit"><%= submitLabel %></button><a href="/login">Về đăng nhập</a><a href="/account">Về tài khoản</a></p>
+      </form>
+    <% } else { %><p><a class="button" href="/account">Về tài khoản</a> <a href="/login">Đăng nhập</a></p><% } %>
+    <% if (mode === 'register') { %><p>Bạn đăng ký với vai trò độc giả. Quản trị viên cấp quyền tác giả khi cần.</p><% } %>
+  </main>
+  <%- include('../partials/footer') %>
+</body></html>

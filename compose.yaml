@@ -19,6 +19,13 @@ services:
       MYSQL_USER: ${MYSQL_USER:?Chua_dat_MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Chua_dat_MYSQL_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET:?Chua_dat_SESSION_SECRET}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:18090}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
 
     expose:
       - "3000"

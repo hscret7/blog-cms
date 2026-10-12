@@ -67,8 +67,8 @@ function validateUserInput(input, { creating = false } = {}) {
     }
   }
 
-  if (!['ADMIN', 'AUTHOR'].includes(input.role)) {
-    errors.role = 'Vai trò phải là ADMIN hoặc AUTHOR.';
+  if (!['ADMIN', 'AUTHOR', 'READER'].includes(input.role)) {
+    errors.role = 'Vai trò phải là ADMIN, AUTHOR hoặc READER.';
   } else {
     data.role = input.role;
   }

@@ -6,6 +6,9 @@ const adminUserRoutes = require('./routes/admin-user-routes');
 const postRoutes = require('./routes/post-routes');
 const publicPostRoutes = require('./routes/public-post-routes');
 const coverRoutes = require('./routes/cover-routes');
+const accountRoutes = require('./routes/account-routes');
+const communityRoutes = require('./routes/community-routes');
+const { optionalAuth } = require('./middlewares/auth');
 const pool = require('./config/database');
 const { sessionMiddleware } = require('./config/session');
 
@@ -76,11 +79,20 @@ app.get('/health/ready', async (req, res) => {
   }
 });
 
-// Trang chủ và chi tiết bài công khai không cần session.
-app.use(publicPostRoutes);
-
-// Các chức năng tài khoản và quản lý sử dụng session.
+// Session nhận diện người đọc, không tạo phiên mới nếu không thay đổi dữ liệu.
 app.use(sessionMiddleware);
+app.use(optionalAuth);
+app.use(async (req, res, next) => {
+  res.locals.unreadCount = 0;
+  if (req.user) {
+    const [rows] = await pool.execute('SELECT COUNT(*) total FROM notifications WHERE user_id=? AND read_at IS NULL', [req.user.id]);
+    res.locals.unreadCount = Number(rows[0].total);
+  }
+  next();
+});
+app.use(publicPostRoutes);
+app.use(accountRoutes);
+app.use(communityRoutes);
 app.use(coverRoutes);
 app.use(authRoutes);
 app.use(categoryRoutes);
@@ -103,6 +115,7 @@ app.use((error, req, res, next) => {
     return next(error);
   }
 
+  if ([400,403,413,429].includes(error.status)) return res.status(error.status).render('public/error', { statusCode: error.status, message: error.status === 413 ? 'Dữ liệu biểu mẫu vượt giới hạn cho phép.' : 'Yêu cầu hoặc bộ lọc không hợp lệ. Vui lòng kiểm tra lại.', errors: {} });
   return res.status(500).json({
     message: 'Có lỗi xảy ra khi xử lý yêu cầu'
   });

@@ -85,8 +85,8 @@ async function main() {
     const passwordHash = await hashPassword(plainPassword);
 
     const [result] = await pool.execute(
-      `INSERT INTO users (name, email, password_hash, role, status)
-       VALUES (?, ?, ?, 'AUTHOR', 'ACTIVE')`,
+      `INSERT INTO users (name, email, password_hash, role, status, email_verified_at)
+       VALUES (?, ?, ?, 'AUTHOR', 'ACTIVE', UTC_TIMESTAMP())`,
       [name, email, passwordHash]
     );
 
@@ -110,4 +110,3 @@ main().catch((error) => {
 
   process.exitCode = 1;
 });
-

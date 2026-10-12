@@ -48,6 +48,10 @@ function validatePublicQuery(query) {
     }
   }
 
+  const sort = query.sort === undefined ? 'newest' : query.sort;
+  if (!['newest','oldest','title'].includes(sort)) errors.sort = 'Thứ tự sắp xếp không hợp lệ.';
+  else data.sort = sort;
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,

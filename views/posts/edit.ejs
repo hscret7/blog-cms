@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sửa bài viết | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=1">
-  <script src="/js/ui.js?v=1" defer></script>
+  <link rel="stylesheet" href="/css/site.css?v=2">
+  <script src="/js/ui.js?v=2" defer></script>
 </head>
 <body>
   <%- include('../partials/header') %>
   <main id="main-content">
     <h1>Sửa bài #<%= post.id %></h1>
+    <p><a href="/manage/posts/<%= post.id %>/history">Xem lịch sử sửa bài</a></p>
     <p>Trạng thái hiện tại: <%= post.status %>.</p>
     <p>Lưu nội dung không thay đổi tác giả hoặc trạng thái xuất bản.</p>
 

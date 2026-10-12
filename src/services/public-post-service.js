@@ -20,7 +20,8 @@ async function getPublicPage(query) {
 
   const filters = {
     q: validation.data.q,
-    category_id: validation.data.category_id
+    category_id: validation.data.category_id,
+    sort: validation.data.sort
   };
 
   const total = await repository.countPublished(filters);

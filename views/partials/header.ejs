@@ -7,15 +7,21 @@
     <nav class="site-nav" aria-label="Điều hướng chính">
       <a href="/" <%- activePath === '/' ? 'aria-current="page"' : '' %>>Đọc blog</a>
       <% if (viewer) { %>
+        <% if (['ADMIN', 'AUTHOR'].includes(viewer.role)) { %>
         <a href="/manage/posts" <%- activePath.startsWith('/manage/posts') ? 'aria-current="page"' : '' %>>Bài viết</a>
+        <% } %>
         <% if (viewer.role === 'ADMIN') { %>
           <a href="/admin/categories" <%- activePath.startsWith('/admin/categories') ? 'aria-current="page"' : '' %>>Danh mục</a>
           <a href="/admin/users" <%- activePath.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>Người dùng</a>
+          <a href="/admin/comments">Bình luận</a>
+          <a href="/admin/activity">Nhật ký</a>
           <a href="/admin" <%- activePath === '/admin' ? 'aria-current="page"' : '' %>>Quản trị</a>
         <% } %>
+        <a href="/notifications">Thông báo (<%= typeof unreadCount === 'number' ? unreadCount : 0 %>)</a>
         <a class="nav-account" href="/account" <%- activePath === '/account' ? 'aria-current="page"' : '' %>><%= viewer.name %></a>
       <% } else { %>
-        <a href="/account">Không gian quản lý</a>
+        <a href="/register">Đăng ký</a>
+        <a href="/account">Không gian cá nhân</a>
         <a class="nav-account" href="/login">Đăng nhập <span aria-hidden="true">↗</span></a>
       <% } %>
     </nav>

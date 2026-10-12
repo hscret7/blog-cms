@@ -1,3 +1,4 @@
+const activity = require('./activity-service');
 const categoryRepository = require('../repositories/category-repository');
 const {
   validateCategoryId,
@@ -33,7 +34,7 @@ async function getCategoryById(idParam) {
   };
 }
 
-async function createCategory(input) {
+async function createCategory(input, actor) {
   const validation = validateCategoryInput(input);
   if (!validation.isValid) {
     return {
@@ -45,7 +46,7 @@ async function createCategory(input) {
   }
 
   try {
-    const id = await categoryRepository.create(validation.data);
+    const id = await writeCategory(actor, null, 'CATEGORY_CREATE', c => categoryRepository.create(validation.data, c));
     return {
       success: true,
       id
@@ -65,7 +66,7 @@ async function createCategory(input) {
   }
 }
 
-async function updateCategory(idParam, input) {
+async function updateCategory(idParam, input, actor) {
   const idValidation = validateCategoryId(idParam);
   if (!idValidation.isValid) {
     return {
@@ -98,10 +99,7 @@ async function updateCategory(idParam, input) {
   }
 
   try {
-    const affectedRows = await categoryRepository.update(
-      idValidation.id,
-      validation.data
-    );
+    const affectedRows = await writeCategory(actor, idValidation.id, 'CATEGORY_UPDATE', c => categoryRepository.update(idValidation.id, validation.data, c));
 
     if (
       affectedRows === 0 &&
@@ -134,7 +132,7 @@ async function updateCategory(idParam, input) {
   }
 }
 
-async function deleteCategory(idParam) {
+async function deleteCategory(idParam, actor) {
   const idValidation = validateCategoryId(idParam);
   if (!idValidation.isValid) {
     return {
@@ -154,7 +152,7 @@ async function deleteCategory(idParam) {
   }
 
   try {
-    const affectedRows = await categoryRepository.remove(idValidation.id);
+    const affectedRows = await writeCategory(actor, idValidation.id, 'CATEGORY_DELETE', c => categoryRepository.remove(idValidation.id, c));
 
     if (affectedRows === 0) {
       return {
@@ -185,3 +183,15 @@ module.exports = {
   updateCategory,
   deleteCategory
 };
+
+async function writeCategory(actor, id, action, write) {
+  return activity.withActor(actor, ['ADMIN'], async c => {
+    if (id) {
+      const [rows] = await c.execute('SELECT id FROM categories WHERE id = ? FOR UPDATE', [id]);
+      if (!rows.length) return 0;
+    }
+    const result = await write(c);
+    if (result > 0) await activity.record(c, actor.id, action, 'category', id || result);
+    return result;
+  });
+}

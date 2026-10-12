@@ -15,6 +15,7 @@ function appWithoutDatabase() {
       if (name === 'express') return express;
       if (name.startsWith('node:')) return require(name);
       if (name.startsWith('./routes/')) return express.Router();
+      if (name === './middlewares/auth') return { optionalAuth(req,res,next) { next(); } };
       if (name === './config/database') return { query: async () => [] };
       if (name === './config/session') return { sessionMiddleware(req, res, next) { sessionRequests++; next(); } };
       throw new Error(`Unexpected dependency: ${name}`);

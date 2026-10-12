@@ -15,10 +15,22 @@ bắt buộc được đề bài quy định.
 
 ## 3. Người sử dụng
 
+Phạm vi được mở rộng ngày 12/10/2026. Có Khách, READER, AUTHOR và ADMIN.
+Đăng ký công khai cấp READER; quyền AUTHOR/ADMIN do ADMIN cấp.
+
+### Độc giả (READER)
+
+- Đăng ký, xác minh email, đăng nhập/đăng xuất.
+- Sửa hồ sơ, đổi/quên/đặt lại mật khẩu.
+- Bình luận sau khi xác minh; sửa/xóa bình luận của mình.
+- Theo dõi danh mục và nhận thông báo trong website.
+- Không có quyền quản lý bài viết, danh mục hoặc người dùng.
+
+
 ### Khách
 
 - Xem danh sách và chi tiết bài đã xuất bản.
-- Tìm kiếm bài theo tiêu đề.
+- Tìm kiếm bài theo tiêu đề/nội dung; sắp xếp mới/cũ/tiêu đề.
 - Lọc bài theo danh mục.
 - Không truy cập chức năng quản trị hoặc bài nháp.
 
@@ -80,9 +92,9 @@ Giao diện phải hiển thị nội dung bằng cơ chế escape an toàn.
 
 ## 7. Ngoài phạm vi phiên bản đầu
 
-- Bình luận và lượt thích.
+- Lượt thích (bình luận một cấp đã nằm trong phạm vi mở rộng).
 - Chat realtime.
-- Gửi email tự động.
+- Email thông báo nội dung và push (xác minh/khôi phục dùng SMTP nằm trong phạm vi mở rộng).
 - Đăng nhập bằng tài khoản bên thứ ba.
 - Thanh toán.
 - Trình soạn thảo HTML và quy trình duyệt nhiều cấp.
@@ -97,3 +109,13 @@ Giao diện phải hiển thị nội dung bằng cơ chế escape an toàn.
 - Có ít nhất 4 biện pháp hardening được kiểm chứng.
 - Repository có README và các commit có ý nghĩa.
 - Có báo cáo tối thiểu 10 trang và demo theo yêu cầu đề.
+## 9. Phạm vi cộng đồng đã thống nhất
+
+AUTHOR có quyền READER và chỉ quản lý bài của mình. ADMIN quản lý tất cả,
+kiểm duyệt bình luận, xem nhật ký. Bình luận có PENDING/APPROVED/HIDDEN,
+10/trang. Nội dung sửa lại phải duyệt lại. Thông báo website cho người theo
+dõi danh mục, người gửi bình luận, tác giả và ADMIN; không dùng realtime.
+Lịch sử nội dung bài chỉ để xem, không phục hồi. Các danh sách có tìm kiếm,
+sắp xếp, phân trang; thao tác thường ngày đều có menu/nút.
+
+Trạng thái mã và kiểm thử tích hợp: [Cập nhật cộng đồng](cap-nhat-cong-dong.md).

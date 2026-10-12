@@ -64,7 +64,7 @@ test('Kiểm tra email và giới hạn 254 ký tự', () => {
   }
 });
 
-test('Chỉ chấp nhận vai trò ADMIN hoặc AUTHOR', () => {
+test('Chỉ chấp nhận vai trò ADMIN, AUTHOR hoặc READER', () => {
   for (const role of ['ADMIN', 'AUTHOR']) {
     assert.equal(
       validateUserInput(validInput({ role })).isValid,
@@ -185,4 +185,8 @@ test('Kiểm tra ID trong phạm vi INT UNSIGNED', () => {
   ]) {
     assert.equal(validateUserId(value).isValid, false);
   }
+});
+test('Vai trò READER hợp lệ, không nhận vai trò ngoài danh sách', () => {
+  assert.equal(validateUserInput({ name:'Độc giả', email:'reader@example.invalid', role:'READER' }).isValid,true);
+  assert.equal(validateUserInput({ name:'Độc giả', email:'reader@example.invalid', role:'SUPERADMIN' }).isValid,false);
 });

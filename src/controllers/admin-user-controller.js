@@ -20,16 +20,8 @@ function renderError(req, res, result) {
 async function listUsers(req, res) {
   res.set('Cache-Control', 'no-store');
 
-  const result = await service.getAllUsers(req.user);
-  if (!result.success) {
-    return renderError(req, res, result);
-  }
-
-  return res.render('users/index', {
-    user: req.user,
-    users: result.data,
-    csrfToken: getCsrfToken(req)
-  });
+  const data = await require('../services/list-service').getPage('users', req.user, req.query);
+  return res.render('users/index', { user: req.user, csrfToken: getCsrfToken(req), ...data, users: data.rows });
 }
 
 function showCreateForm(req, res) {

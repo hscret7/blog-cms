@@ -1,5 +1,10 @@
 # Hệ thống Blog CMS
 
+> Nhánh giao diện hiện có migration 003/004 và chức năng cộng đồng.
+> Trước khi chạy image mới, làm theo [hướng dẫn cập nhật đầy đủ](docs/cap-nhat-cong-dong.md):
+> lấy mã → sao lưu → migration → cấu hình SMTP → build → kiểm tra trên giao diện.
+
+
 Đề tài số 7 môn Triển khai và Quản trị Hệ thống Phần mềm.
 
 ## Mục tiêu
@@ -44,7 +49,7 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Xác thực tài khoản với mật khẩu băm Argon2id (kèm script tạo ADMIN và AUTHOR).
 - Quản lý phiên đăng nhập lưu trong MySQL qua express-mysql-session.
 - Bảo vệ chống tấn công CSRF cho đăng nhập và đăng xuất.
-- Phân quyền truy cập giữa vai trò ADMIN và AUTHOR.
+- Phân quyền ADMIN, AUTHOR và READER; đăng ký công khai luôn là READER.
 - Giới hạn tần suất đăng nhập (rate limiting) cho `POST /login`.
 - Quản lý danh mục cho ADMIN (danh sách, tạo mới, sửa, xóa với khóa ngoại RESTRICT).
 - ADMIN có thể thêm, xem danh sách, sửa và xóa danh mục.
@@ -58,7 +63,7 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Bài mới có trạng thái DRAFT và published_at bằng NULL.
 - Đã triển khai xuất bản, chuyển về nháp và xóa bài
 - Website công khai hiển thị danh sách và chi tiết bài đã xuất bản.
-- Tìm kiếm theo tiêu đề, lọc danh mục và phân trang 10 bài/trang.
+- Tìm kiếm tiêu đề/nội dung, lọc danh mục, sắp xếp và phân trang 10 bài/trang.
 - Bài nháp không xuất hiện trên website công khai.
 - Nội dung bài viết hiển thị dưới dạng văn bản, được escape HTML.
 - ADMIN quản lý người dùng qua giao diện: danh sách, tạo tài khoản, sửa tên, email, vai trò và khóa/mở khóa.
@@ -145,7 +150,7 @@ Không cần đăng nhập để truy cập:
 
 Trang chủ hỗ trợ các tham số:
 
-- `q`: tìm kiếm theo tiêu đề, tối đa 200 ký tự Unicode.
+- `q`: tìm kiếm theo tiêu đề và nội dung, tối đa 200 ký tự Unicode.
 - `category_id`: lọc theo ID danh mục.
 - `page`: số trang; mỗi trang hiển thị tối đa 10 bài.
 
@@ -167,13 +172,13 @@ Các trường hợp đã kiểm tra thủ công:
 
 ### Kiểm thử tự động
 
-Chạy toàn bộ chín bộ kiểm thử từ thư mục gốc dự án:
+Chạy toàn bộ các bộ kiểm thử từ thư mục gốc dự án:
 
 ```bash
 node --test tests/*.test.js
 ```
 
-Kết quả lần kiểm tra gần nhất: 58 test đạt, 0 thất bại.
+Kết quả lần kiểm tra gần nhất: 99 test đạt, 0 thất bại.
 
 Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
 xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
@@ -235,7 +240,7 @@ của ADMIN thực hiện thao tác.
 Có quy tắc giữ ít nhất một ADMIN hoạt động trong service.
 Chưa kiểm chứng riêng từng nhánh của quy tắc ADMIN cuối cùng.
 
-Hiện chưa hỗ trợ xóa người dùng hoặc đổi mật khẩu qua giao diện.
+Chưa hỗ trợ xóa người dùng; tài khoản có biểu mẫu tự đổi mật khẩu qua giao diện.
 
 ## Hướng dẫn chạy
 
@@ -491,7 +496,7 @@ Trước khi thao tác, kiểm tra đúng Engine:
 docker info --format 'Name={{.Name}} | OS={{.OperatingSystem}}'
 ```
 
-Database gồm ba bảng nghiệp vụ: `users`, `categories`, `posts`.
+Database core gồm `users`, `categories`, `posts`; migration 003/004 bổ sung tài khoản và cộng đồng.
 
 Sau khi MySQL healthy, chạy tệp SQL một lần trên database
 chưa có các bảng này:
@@ -499,6 +504,8 @@ chưa có các bảng này:
 ```bash
 docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' < db/migrations/001_create_core_tables.sql
 ```
+
+Với cài mới, sau 001 còn phải chạy 003 và 004, theo [hướng dẫn cập nhật](docs/cap-nhat-cong-dong.md), rồi mới chạy app/scripts tạo tài khoản. Với database đang có, không chạy lại 001.
 
 Kiểm tra danh sách bảng:
 
@@ -770,11 +777,29 @@ Các route vẫn kiểm tra quyền trên server và CSRF cho thao tác POST.
 
 Express chỉ phục vụ `/css` và `/js` trước session. Ảnh bài viết tiếp tục
 được trả qua `/media/posts/:id/cover` có kiểm tra quyền.
-Không có CDN hoặc dependency mới cho giao diện.
+Không có CDN; phần email bổ sung Nodemailer 10.1.0, được khóa phiên bản.
 
 Kiểm tra tự động tất cả các bộ test bằng `node --test tests/*.test.js`.
 Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 [Kiểm tra giao diện](docs/kiem-thu-giao-dien.md).
+
+## Tài khoản độc giả và cộng đồng
+
+- Đăng ký READER, xác minh email, quên/đặt lại mật khẩu bằng liên kết một lần.
+- Hồ sơ sửa tên/email; đổi email yêu cầu mật khẩu và xác minh lại.
+- Đổi/reset mật khẩu tăng session_version để vô hiệu hóa phiên cũ.
+- Bình luận một cấp: gửi/sửa thành PENDING, ADMIN duyệt/ẩn/xóa;
+  bản công khai chỉ APPROVED trên bài PUBLISHED, 10 bình luận/trang.
+- Theo dõi danh mục, nhận thông báo trong website; đánh dấu đã đọc/tất cả.
+- Quản lý có tìm kiếm, bộ lọc, sắp xếp và phân trang.
+- Nhật ký ADMIN; lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
+- Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
+
+Đã chạy 99 test trong môi trường độc lập, 0 thất bại; npm audit 0 lỗ hổng.
+Các service mới được kiểm thử với database/SMTP giả lập, chưa kiểm chứng
+migration hoặc email thực tế trên WSL. Kiểm tra UI bằng Chromium với fixture:
+30 trang × 2 kích thước, không tràn viewport/lỗi JS; không thay thế CRUD thật.
+Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md).
 
 ## Cấu hình và dữ liệu
 

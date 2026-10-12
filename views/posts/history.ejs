@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lịch sử bài viết | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=2"><script src="/js/ui.js?v=2" defer></script></head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content">
+    <h1>Lịch sử sửa bài</h1><p><%= post.title %></p>
+    <p>Chọn phiên bản để đọc nội dung đã lưu. Phiên bản chỉ để xem, không tự khôi phục nội dung hiện tại.</p>
+    <p><a class="button" href="/manage/posts/<%= post.id %>/edit">Về sửa bài</a></p>
+    <% if (!versions.length) { %><p>Chưa có phiên bản được lưu.</p><% } %>
+    <div class="table-wrap"><table><thead><tr><th>Phiên bản</th><th>Người lưu</th><th>Thời gian</th><th>Thao tác</th></tr></thead><tbody>
+    <% for(const version of versions) { %><tr><td>#<%= version.id %></td><td><%= version.name || 'Tài khoản không còn tồn tại' %></td><td><%= new Intl.DateTimeFormat('vi-VN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(version.created_at) %></td><td><a href="/manage/posts/<%= post.id %>/history?version=<%= version.id %>">Đọc phiên bản</a></td></tr><% } %>
+    </tbody></table></div>
+    <%- include('../partials/pagination') %>
+    <% if (selected) { %><article class="reading-content"><h2><%= selected.title %></h2><p>Slug: <%= selected.slug %></p><div class="post-content"><%= selected.content %></div></article><% } %>
+  </main>
+  <%- include('../partials/footer') %>
+</body></html>

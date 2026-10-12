@@ -5,19 +5,21 @@ const test = require('node:test');
 const ejs = require('ejs');
 
 const views = path.resolve(__dirname, '../views');
-const admin = { id: 3, name: 'Quản trị <script>alert(1)</script>', email: 'admin@example.invalid', role: 'ADMIN', status: 'ACTIVE' };
+const admin = { id: 3, name: 'Quản trị <script>alert(1)</script>', email: 'admin@example.invalid', role: 'ADMIN', status: 'ACTIVE', email_verified_at: new Date(), session_version: 0 };
 const author = { ...admin, id: 4, name: 'Tác giả', role: 'AUTHOR' };
 const category = { id: 1, name: 'Công nghệ', slug: 'cong-nghe', description: 'Một mô tả' };
 const post = { id: 5, title: 'Tiêu đề <script>alert(1)</script>', slug: 'bai-thu', content: '<img src=x onerror=alert(1)>\nDòng thứ hai', category_id: 1, author_name: author.name, category_name: category.name, status: 'DRAFT', cover_path: null };
 const fixture = {
-  user: admin, currentUser: admin, currentPath: '/account',
+  user: admin, currentUser: admin, currentPath: '/account', unreadCount: 2, query: {},
+  mode: 'mine', rows: [], versions: [], selected: null,
+  commentPage: { total: 0, rows: [], filters: { page: 1, sort: 'newest' }, totalPages: 1 },
   email: '', csrfToken: 'test-csrf', errorMessage: null, errors: {},
   formData: { name: 'Tên thử', email: 'test@example.invalid', role: 'AUTHOR', title: 'Bài thử', slug: 'bai-thu', description: '', content: 'Nội dung', category_id: '1' },
   category, categories: [category], targetUser: author,
   users: [admin, author, { ...author, id: 5, status: 'LOCKED' }],
   post, posts: [post, { ...post, id: 6, status: 'PUBLISHED' }],
   total: 2, page: 1, totalPages: 2,
-  filters: { q: '', category_id: null }, previousUrl: null, nextUrl: '/?page=2',
+  filters: { q: '', category_id: null, page: 1, sort: 'newest', status: '' }, previousUrl: null, nextUrl: '/?page=2',
   publishedAtText: '12:00 13/10/2026', statusCode: 404, message: 'Không tìm thấy.',
   formAction: '/manage/posts', action: '/admin/users', creating: true, submitLabel: 'Lưu'
 };
@@ -27,10 +29,10 @@ function render(file, extra = {}) {
 
 test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ qua', () => {
   const files = fs.readdirSync(views, { recursive: true }).filter(file => file.endsWith('.ejs') && !file.startsWith('partials/') && !file.endsWith('/form.ejs'));
-  assert.equal(files.length, 18);
+  assert.equal(files.length, 21);
   for (const file of files) {
     const html = render(file);
-    assert.match(html, /href="\/css\/site.css\?v=1"/, file);
+    assert.match(html, /href="\/css\/site.css\?v=2"/, file);
     assert.match(html, /id="main-content"/, file);
     assert.match(html, /aria-label="Điều hướng chính"/, file);
     assert.match(html, /<\/html>/, file);
@@ -101,4 +103,32 @@ test('Lỗi validation render được và không điền lại mật khẩu ng�
   assert.match(html, /Mật khẩu chưa hợp lệ/);
   assert.ok(!/type="password"[^>]*value=/s.test(html));
   assert.match(render('posts/form.ejs', { categories: [] }), /href="\/admin\/categories\/new"/);
+});
+
+
+test('READER không có nút quản lý bài và có thông báo, bình luận, theo dõi', () => {
+  const reader = { ...author, role: 'READER' };
+  const html = render('account.ejs', { user: reader, currentUser: reader });
+  assert.ok(!html.includes('href="/manage/posts'));
+  for (const target of ['/notifications','/my/comments','/following','/account/password','/account/profile']) assert.ok(html.includes(`href="${target}"`), target);
+});
+
+test('Biểu mẫu tài khoản render đủ sáu chế độ, password không điền lại', () => {
+  for (const mode of ['register','forgot','reset','verify','profile','password']) {
+    const html = render('auth/form.ejs', { mode, title: 'Tài khoản', result: {}, data: { name:'Độc giả', email:'reader@example.invalid' }, token:'' });
+    assert.match(html, /name="_csrf"/);
+    assert.ok(!/type="password"[^>]*value=/s.test(html));
+    if (['register','reset','password','profile'].includes(mode)) assert.match(html, /data-toggle-password/);
+  }
+});
+
+test('Bình luận công khai, thông báo và lịch sử escape nội dung', () => {
+  const content = '<script>comment()</script>';
+  const html = render('public/detail.ejs', { commentPage: { total:1,totalPages:1,filters:{page:1,sort:'newest'},rows:[{name:'Độc giả',content}] } });
+  assert.ok(!html.includes(content));
+  assert.match(html, /action="\/posts\/5\/comments"/);
+  const history = render('posts/history.ejs', { selected: {title:'Cũ',slug:'cu',content} });
+  assert.ok(!history.includes(content));
+  const notices = render('community/list.ejs', { mode:'notifications',rows:[{id:1,message:content,target_path:'/account',read_at:null,created_at:new Date()}] });
+  assert.ok(!notices.includes(content));
 });
