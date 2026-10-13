@@ -74,11 +74,11 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
 - Đã triển khai giám sát Nginx, MySQL và container bằng Prometheus, các exporter, cAdvisor và Grafana.
 
-Chưa triển khai Loki, Promtail và minh chứng truy vấn LogQL.
+Đã bổ sung cấu hình Loki + Promtail, Grafana datasource/dashboard và ba query LogQL. Đang chờ kiểm chứng runtime trên máy sinh viên.
 Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
 Đã triển khai Nginx reverse proxy với security headers.
 Website được truy cập qua Nginx; app không công bố cổng ra host.
-Chưa triển khai log tập trung.
+Hướng dẫn triển khai và minh chứng log tập trung: [docs/log-tap-trung.md](docs/log-tap-trung.md).
 
 
 ### Kiểm thử quản lý danh mục
@@ -806,3 +806,22 @@ Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng �
 ## Cấu hình và dữ liệu
 
 Không đưa mật khẩu, file môi trường thật, khóa riêng, log runtime hoặc dữ liệu database vào repository.
+
+
+### Commit 3 — Log tập trung Loki + Promtail
+
+Xem [hướng dẫn đầy đủ](docs/log-tap-trung.md): chọn nguồn log đúng Compose,
+kiểm tra cấu hình, chạy Loki/Promtail, mở Grafana và demo ba query LogQL.
+
+- Loki: localhost:13100 → container 3100, retention 7 ngày, volume riêng.
+- Promtail: đọc log app/nginx/mysql/phpmyadmin qua mount chỉ đọc, không Docker socket.
+- Grafana datasource `Blog CMS Loki`, dashboard UID `blog-cms-logs`.
+- Chạy `python3 scripts/prepare-log-targets.py` trước khi bật Promtail và sau
+  mỗi lần recreate nguồn log; targets runtime không commit.
+- Chạy `python3 scripts/verify-central-logs.py` để xác nhận request 404 vừa
+  tạo và ba query có kết quả thật; không báo hoàn tất nếu script FAIL.
+- Promtail EOL; dùng cho yêu cầu môn học local, chuyển Alloy khi vận hành dài hạn.
+- Đã kiểm tra độc lập bằng native binaries và log fixture, 8 test chọn nguồn
+  log đạt. Docker/Grafana thực tế trên máy sinh viên cần kiểm chứng tiếp.
+- Promtail root để đọc log và cAdvisor privileged là ngoại lệ hardening; không
+  tuyên bố mọi dịch vụ đều non-root hoặc cách ly tuyệt đối.
