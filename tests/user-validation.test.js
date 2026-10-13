@@ -79,10 +79,14 @@ test('Chỉ chấp nhận vai trò ADMIN, AUTHOR hoặc READER', () => {
   }
 });
 
-test('Tạo tài khoản yêu cầu mật khẩu từ 15 đến 128 ký tự', () => {
-  for (const length of [15, 128]) {
-    const password = '😀'.repeat(length);
+test('Tạo tài khoản yêu cầu 8–128 ký tự và đủ bốn nhóm', () => {
+  const validPasswords = [
+    'Aa1!aaaa',                 // Đúng 8 ký tự
+    'Aa1!' + 'a'.repeat(124),    // Đúng 128 ký tự
+    'Aa1!' + '😀'.repeat(4)      // Unicode vẫn được phép
+  ];
 
+  for (const password of validPasswords) {
     const result = validateUserInput(validInput({
       password,
       password_confirmation: password
@@ -96,13 +100,21 @@ test('Tạo tài khoản yêu cầu mật khẩu từ 15 đến 128 ký tự', (
     );
   }
 
-  for (const password of [
+  const invalidPasswords = [
     undefined,
     null,
     [],
-    'a'.repeat(14),
-    'a'.repeat(129)
-  ]) {
+    'Aa1!aaa',                  // Chỉ 7 ký tự
+    'Aa1!' + 'a'.repeat(125),   // 129 ký tự
+    'aa1!aaaa',                 // Thiếu chữ hoa
+    'AA1!AAAA',                 // Thiếu chữ thường
+    'Aa!!aaaa',                 // Thiếu số
+    'Aa11aaaa',                 // Thiếu ký tự đặc biệt
+    'Aa1 aaaa',                 // Khoảng trắng không thay dấu
+    'Aa1😀aaaa'                 // Emoji không thay dấu
+  ];
+
+  for (const password of invalidPasswords) {
     const result = validateUserInput(validInput({
       password,
       password_confirmation: password

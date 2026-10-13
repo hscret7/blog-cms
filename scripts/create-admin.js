@@ -55,7 +55,7 @@ async function main() {
     }
 
     const plainPassword = await password({
-      message: 'Mật khẩu ADMIN, từ 15 đến 128 ký tự:',
+      message: 'Mật khẩu ADMIN, 8–128 ký tự, đủ chữ hoa/thường/số/ký tự đặc biệt:',
       mask: '*',
       validate(value) {
         try {

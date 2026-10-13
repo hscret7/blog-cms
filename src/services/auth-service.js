@@ -27,7 +27,7 @@ async function authenticate(email, password) {
   if (
     normalizedEmail.length > 254 ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
-    passwordLength < 15 ||
+    passwordLength < 8 ||
     passwordLength > 128
   ) {
     return null;
