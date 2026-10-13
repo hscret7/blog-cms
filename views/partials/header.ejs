@@ -13,12 +13,12 @@
         <% if (viewer.role === 'ADMIN') { %>
           <a href="/admin/categories" <%- activePath.startsWith('/admin/categories') ? 'aria-current="page"' : '' %>>Danh mục</a>
           <a href="/admin/users" <%- activePath.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>Người dùng</a>
-          <a href="/admin/comments">Bình luận</a>
-          <a href="/admin/author-requests">Duyệt tác giả</a>
-      <a href="/admin/activity">Nhật ký</a>
+          <a href="/admin/comments" <%- activePath === '/admin/comments' ? 'aria-current="page"' : '' %>>Bình luận</a>
+          <a href="/admin/author-requests" <%- activePath === '/admin/author-requests' ? 'aria-current="page"' : '' %>>Duyệt tác giả</a>
+      <a href="/admin/activity" <%- activePath === '/admin/activity' ? 'aria-current="page"' : '' %>>Nhật ký</a>
           <a href="/admin" <%- activePath === '/admin' ? 'aria-current="page"' : '' %>>Quản trị</a>
         <% } %>
-        <a href="/notifications">Thông báo (<%= typeof unreadCount === 'number' ? unreadCount : 0 %>)</a>
+        <a href="/notifications" <%- activePath === '/notifications' ? 'aria-current="page"' : '' %>>Thông báo (<%= typeof unreadCount === 'number' ? unreadCount : 0 %>)</a>
         <a class="nav-account" href="/account" <%- activePath === '/account' ? 'aria-current="page"' : '' %>><%= viewer.name %></a>
       <% } else { %>
         <a href="/register">Đăng ký</a>
@@ -30,4 +30,4 @@
 </header>
 
 <%- include('feedback') %>
-<script src="/js/ui.js?v=3" defer></script>
+<script src="/js/ui.js?v=4" defer></script>

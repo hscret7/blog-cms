@@ -180,7 +180,7 @@ Chạy toàn bộ các bộ kiểm thử từ thư mục gốc dự án:
 node --test tests/*.test.js
 ```
 
-Kết quả lần kiểm tra gần nhất: 129 test đạt, 0 thất bại.
+Kết quả lần kiểm tra gần nhất: 131 test đạt, 0 thất bại.
 
 Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
 xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
@@ -797,7 +797,7 @@ Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 - Nhật ký ADMIN; lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
 - Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
 
-Đã chạy 129 test trong môi trường độc lập, 0 thất bại; npm audit 0 lỗ hổng.
+Đã chạy 131 test trong môi trường độc lập, 0 thất bại; npm audit 0 lỗ hổng.
 Các service mới được kiểm thử với database/SMTP giả lập, chưa kiểm chứng
 migration hoặc email thực tế trên WSL. Kiểm tra UI bằng Chromium với fixture:
 30 trang × 2 kích thước, không tràn viewport/lỗi JS; không thay thế CRUD thật.

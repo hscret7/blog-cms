@@ -19,13 +19,6 @@ if (tokenInput) {
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 }
 
-// Quay lại bằng GET trong cùng tab, giữ bộ lọc và không gửi lại POST.
-function internalPath(value) {
-  try { const url = new URL(value, location.origin); if (url.origin !== location.origin || /[\\]/.test(value)) return null;
-    for (const key of ['code','state','token','credential','password','_csrf']) url.searchParams.delete(key);
-    return url.pathname + url.search;
-  } catch { return null; }
-}
 try {
   const owner=document.querySelector('[data-session-user]')?.dataset.sessionUser || '0';
   if(sessionStorage.getItem('cms-owner')!==owner) {
@@ -33,22 +26,6 @@ try {
     sessionStorage.setItem('cms-owner',owner);
   }
 } catch {}
-let navigation = [];
-try {
-  navigation = JSON.parse(sessionStorage.getItem('cms-navigation') || '[]').filter(v => typeof v === 'string' && internalPath(v));
-  const current = internalPath(location.href);
-  if (!location.pathname.startsWith('/auth/google') && navigation.at(-1) !== current) navigation.push(current);
-  navigation = navigation.slice(-30);sessionStorage.setItem('cms-navigation', JSON.stringify(navigation));
-} catch { navigation = []; }
-document.querySelectorAll('[data-back]').forEach(link => link.addEventListener('click', event => {
-  if (dirty && !confirm('Bạn có thay đổi chưa lưu. Quay lại và bỏ thay đổi?')) { event.preventDefault();return; }
-  if (dirty) dirty=false;
-  if (navigation.length < 2) return;
-  const previous = internalPath(navigation.at(-2)); if (!previous) return;
-  event.preventDefault(); navigation.pop();
-  try { sessionStorage.setItem('cms-navigation',JSON.stringify(navigation)); } catch {}
-  location.assign(previous);
-}));
 document.querySelectorAll('[data-collapse]').forEach(button => button.addEventListener('click', () => {const details=button.closest('details');if(details)details.open=false;}));
 document.querySelectorAll('details[data-preview]').forEach(details=>details.addEventListener('toggle',()=>{details.querySelector('summary').textContent=details.open?'Ẩn nội dung':'Xem nội dung';}));
 

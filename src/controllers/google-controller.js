@@ -8,7 +8,7 @@ async function challengePage(req,res,mode,user=null){
 }
 module.exports={
  start:(req,res)=>challengePage(req,res,'LOGIN'),
- async settings(req,res){res.set('Cache-Control','no-store');res.render('auth/google-settings',{identity:await service.linked(req.user),csrfToken:getCsrfToken(req),user:req.user,errorMessage:null});},
+ async settings(req,res){let googleReady=false;try{service.settings();googleReady=true;}catch{}res.set('Cache-Control','no-store');res.render('auth/google-settings',{identity:await service.linked(req.user),csrfToken:getCsrfToken(req),user:req.user,errorMessage:null,googleReady});},
  async link(req,res){if(!await service.confirmLocal(req.user,req.body?.current_password))return error(res,{status:422,message:'Nhập đúng mật khẩu website để bắt đầu liên kết Google.'});return challengePage(req,res,'LINK',req.user);},
  async complete(req,res){
   res.set('Cache-Control','no-store');

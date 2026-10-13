@@ -13,12 +13,12 @@ function parseQuery(query = {}) {
   return { page: Number(page), q: q.trim(), sort, status: query.status || '' };
 }
 function escapedLike(q) { return '%' + q.replace(/[!%_]/g, ch => '!' + ch) + '%'; }
-async function pageRows(select, count, values, query) {
+async function pageRows(select, count, values, query, orderColumn = 'c.id') {
   const f = parseQuery(query);
   const [counts] = await pool.execute(count, values);
   const total = Number(counts[0].total); const totalPages = Math.max(1, Math.ceil(total / 10));
   f.page = Math.min(f.page, totalPages);
-  const [rows] = await pool.execute(select + ` ORDER BY id ${f.sort === 'oldest' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`, [...values, 10, (f.page - 1) * 10]);
+  const [rows] = await pool.execute(select + ` ORDER BY ${orderColumn} ${f.sort === 'oldest' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`, [...values, 10, (f.page - 1) * 10]);
   return { rows, total, totalPages, filters: f };
 }
 async function comments(postId, query) {
@@ -146,7 +146,7 @@ async function notifications(actor, query) {
   if (query.unread === '1') terms.push('n.read_at IS NULL');
   const where=terms.join(' AND ');
   const data=await pageRows(`SELECT n.id,n.message,n.target_path,n.read_at,n.hidden_at,n.comment_id,n.created_at FROM notifications n WHERE ${where}`,
-    `SELECT COUNT(*) total FROM notifications n WHERE ${where}`,values,fToQuery(f));
+    `SELECT COUNT(*) total FROM notifications n WHERE ${where}`,values,fToQuery(f),'n.id');
   for (const notice of data.rows) {
     notice.preview = null;
     if (notice.comment_id) {
@@ -193,7 +193,7 @@ async function audit(query) {
   if(f.q){terms.push("(a.action LIKE ? ESCAPE '!' OR a.object_type LIKE ? ESCAPE '!' OR u.name LIKE ? ESCAPE '!')");values.push(...Array(3).fill(escapedLike(f.q)));}
   const where=terms.join(' AND ');
   const data = await pageRows('SELECT a.id,a.actor_id,a.action,a.object_type,a.object_id,a.created_at,u.name FROM audit_events a LEFT JOIN users u ON u.id=a.actor_id WHERE '+where,
-    'SELECT COUNT(*) total FROM audit_events a LEFT JOIN users u ON u.id=a.actor_id WHERE '+where,values,fToQuery(f));
+    'SELECT COUNT(*) total FROM audit_events a LEFT JOIN users u ON u.id=a.actor_id WHERE '+where,values,fToQuery(f),'a.id');
   const [actorOptions] = await pool.execute('SELECT DISTINCT u.id,u.name FROM users u JOIN audit_events a ON a.actor_id=u.id ORDER BY u.name,u.id');
   const [actionOptions] = await pool.execute('SELECT DISTINCT action FROM audit_events ORDER BY action');
   const [typeOptions] = await pool.execute('SELECT DISTINCT object_type FROM audit_events ORDER BY object_type');

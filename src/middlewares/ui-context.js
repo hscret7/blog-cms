@@ -22,16 +22,6 @@ function setFeedback(req, message, draftKey = null) {
 function uiContext(req, res, next) {
   res.locals.feedback = req.session?.feedback || null;
   if (req.method === 'GET' && req.session) delete req.session.feedback;
-  res.locals.backUrl = safePath(req.query?.returnTo, fallbackFor(req.path));
-  const render = res.render.bind(res);
-  res.render = function(view, options, callback) {
-    if (req.method === 'GET' && req.session && res.statusCode < 400 && !req.path.startsWith('/auth/google')) {
-      res.locals.backUrl = safePath(req.query?.returnTo, safePath(req.session.lastUiPath, fallbackFor(req.path)));
-      if (res.locals.backUrl === req.originalUrl) res.locals.backUrl = fallbackFor(req.path);
-      req.session.lastUiPath = safePath(req.originalUrl);
-    }
-    return render(view, options, callback);
-  };
   next();
 }
 module.exports = { safePath, fallbackFor, setFeedback, uiContext };

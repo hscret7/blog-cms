@@ -5,7 +5,7 @@ Thực hiện trên nhánh `codex/cms-ui-navigation`. Bản này giữ chính s�
 
 ## Chức năng đã bổ sung
 
-- Mũi tên quay lại giữ bộ lọc và số trang; cảnh báo khi rời biểu mẫu chưa lưu.
+- Đã bỏ nút quay lại toàn cục theo yêu cầu. Giữ cảnh báo khi rời biểu mẫu chưa lưu.
 - Bản nháp nội dung bài được giữ trong sessionStorage của tab, có khôi phục/xóa;
   không lưu mật khẩu. Bản nháp bị xóa khi đổi người đăng nhập trong tab.
 - Thông báo có xem/ẩn nội dung, thu gọn, ẩn/khôi phục và liên kết bình luận.
@@ -41,7 +41,7 @@ git diff --check
 ```
 
 Nếu `git status --short` có thay đổi riêng, lưu/commit chúng trước khi pull;
-không dùng reset để bỏ thay đổi. Hiện đã kiểm tra 129 test đạt, 0 thất bại.
+không dùng reset để bỏ thay đổi. Hiện đã kiểm tra 131 test đạt, 0 thất bại.
 
 ## 2. Sao lưu và chạy migration 005 — Terminal WSL
 
@@ -145,9 +145,9 @@ và nghiệp vụ. App vẫn dùng database/ảnh hiện có; không cần `down
 
 Mở [website](http://localhost:18090/); các chức năng có menu/nút từ giao diện.
 
-1. Đăng nhập rồi mở bài, tìm/lọc/phân trang, chuyển sang một thao tác, bấm mũi
-   tên quay lại: đúng trang trước và giữ query. Nhập nội dung chưa lưu rồi quay
-   lại: có xác nhận. Khôi phục/xóa bản nháp ở trang sửa bài.
+1. Đăng nhập, mở từng mục menu để kiểm tra. Trang tài khoản có hai cột trên
+   máy tính, xếp dọc trên điện thoại; không có nút quay lại toàn cục. Nhập nội
+   dung chưa lưu rồi rời trang: có xác nhận. Khôi phục/xóa bản nháp ở trang sửa bài.
 2. READER đã xác minh gửi bình luận và trả lời: chờ duyệt. ADMIN duyệt rồi
    mở thông báo của người gửi: Xem nội dung → Ẩn nội dung/Thu gọn; Đến bình luận
    phải mở đúng bài và vị trí. Thử ẩn/khôi phục thông báo.
@@ -169,10 +169,10 @@ Mở [website](http://localhost:18090/); các chức năng có menu/nút từ gi
 
 ## Kiểm chứng và giới hạn
 
-- Đã chạy 129 test: gồm quyền bình luận/trả lời, thông báo, xét AUTHOR, phiên,
+- Đã chạy 131 test: gồm quyền bình luận/trả lời, thông báo, xét AUTHOR, phiên,
   CSRF, Google nonce/audience/issuer/expiry và chữ ký RSA bằng khóa thử.
 - Đã kiểm tra 37 trạng thái trang, mỗi trạng thái ở 1440px và 390px (74 lượt),
-  không tràn ngang hoặc lỗi JavaScript; thử tương tác quay lại, bản nháp,
+  không tràn ngang hoặc lỗi JavaScript; thử bố cục hai cột, bỏ nút quay lại, bản nháp,
   hiện mật khẩu và thu gọn nội dung. SDK Google bị chặn trong fixture này.
 - Chưa chạy migration 005 trên MySQL thật của bạn; chưa thử Google provider,
   SMTP thật hoặc bản cập nhật qua Nginx của bạn. Test SQL dùng dependency giả.
@@ -182,3 +182,14 @@ Mở [website](http://localhost:18090/); các chức năng có menu/nút từ gi
   10 yêu cầu/15 phút/IP, tính cả mở trang và gửi callback. Bình luận: 5 lần/phút/IP.
 - Trả lời chỉ một cấp; không tự suy đoán ID cho thông báo cũ. Chưa thêm Loki,
   thích bài, push trình duyệt hoặc đăng nhập Google cho Grafana.
+
+## Bản sửa menu và bố cục
+
+Đã sửa cột sắp xếp SQL thành c.id/n.id/a.id để không trùng ID giữa các bảng.
+Bổ sung kiểm tra HTTP 13 địa chỉ menu với service và EJS thật, database fixture.
+131/131 test đạt. Giữ cảnh báo chưa lưu và bản nháp, bỏ nút quay lại cùng cơ
+chế lịch sử điều hướng tùy biến. Cache CSS/JS tăng lên v4.
+
+Nếu đã chạy 005, chỉ pull, chạy test, build và recreate app; không chạy lại
+migration. Google Cloud cần chủ tài khoản tạo Client ID; code không thể tự
+đoán hoặc tạo ID khi không có quyền Cloud. SMTP gửi thư là cấu hình riêng.

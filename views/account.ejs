@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tài khoản | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=3">
+  <link rel="stylesheet" href="/css/site.css?v=4">
 </head>
 <body>
   <%- include('partials/header') %>
   <main id="main-content">
-    <span class="eyebrow">Không gian quản lý</span><h1>Xin chào, <%= user.name %>.</h1><p>Viết, chỉnh sửa và quản lý nội dung ngay tại đây.</p>
-    <div class="account-layout">
+    <span class="eyebrow">Không gian làm việc</span><h1>Xin chào, <%= user.name %>.</h1><p><%= user.role==='READER'?'Theo dõi bài viết, tham gia thảo luận và quản lý tài khoản của bạn.':'Quản lý bài viết, cộng đồng và tài khoản của bạn.' %></p>
+    <div class="account-layout workspace-layout">
       <section class="profile-card" aria-labelledby="profile-heading">
         <div class="avatar" aria-hidden="true"><%= Array.from(user.name)[0] || 'B' %></div><h2 id="profile-heading">Tài khoản của bạn</h2>
         <span class="badge"><%= user.role === 'ADMIN' ? 'Quản trị viên' : user.role === 'AUTHOR' ? 'Tác giả' : 'Độc giả' %></span>
@@ -22,18 +22,29 @@
         <% } %>
         <form action="/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary" type="submit">Đăng xuất</button></form>
       </section>
-      <p><a href="/account/google">Quản lý liên kết Google</a></p>
+
+      <div class="workspace-content">
+      <section class="workspace-section" aria-labelledby="personal-tools"><h2 id="personal-tools">Cá nhân & cộng đồng</h2>
       <div class="action-grid">
         <% if(user.role==='READER') { %><section class="action-card"><h2>Muốn viết bài?</h2><p>Gửi yêu cầu để quản trị viên cấp quyền tác giả.</p><a href="/account/author-request">Yêu cầu quyền tác giả →</a></section><% } %>
         <section class="action-card"><h2>Bình luận của tôi</h2><p>Xem trạng thái, sửa hoặc xóa bình luận đã gửi.</p><a class="button" href="/my/comments">Quản lý bình luận</a></section>
         <section class="action-card"><h2>Chủ đề & thông báo</h2><p>Theo dõi danh mục và nhận tin mới trong website.</p><a class="button" href="/following">Theo dõi chủ đề</a><a href="/notifications">Xem thông báo</a></section>
+        <section class="action-card"><h2>Đăng nhập & bảo mật</h2><p>Quản lý kết nối Google và phương thức đăng nhập.</p><a class="button button-secondary" href="/account/google">Liên kết Google</a><a href="/account/password">Đổi mật khẩu</a></section>
+      </div></section>
         <% if (['ADMIN','AUTHOR'].includes(user.role)) { %>
+      <section class="workspace-section" aria-labelledby="content-tools"><h2 id="content-tools">Nội dung</h2><div class="action-grid">
         <section class="action-card"><span class="action-icon" aria-hidden="true">✎</span><h2>Bài viết</h2><p>Tạo bài nháp, chỉnh sửa, xuất bản và quản lý ảnh đại diện.</p><a class="button" href="/manage/posts">Quản lý bài viết →</a></section>
         <section class="action-card"><span class="action-icon" aria-hidden="true">+</span><h2>Ý tưởng mới</h2><p>Bắt đầu với một bài nháp. Bạn có thể xuất bản khi nội dung đã sẵn sàng.</p><a class="button button-secondary" href="/manage/posts/new">Tạo bài nháp</a></section>
+      </div></section>
         <% } %>
         <% if (user.role === 'ADMIN') { %>
+      <section class="workspace-section" aria-labelledby="admin-tools"><h2 id="admin-tools">Quản trị</h2><div class="action-grid">
           <section class="action-card"><span class="action-icon" aria-hidden="true">≡</span><h2>Danh mục</h2><p>Thêm, sửa và sắp xếp các chủ đề của blog.</p><a class="button button-secondary" href="/admin/categories">Quản lý danh mục</a></section>
           <section class="action-card"><span class="action-icon" aria-hidden="true">◎</span><h2>Người dùng</h2><p>Tạo tài khoản, cập nhật vai trò và khóa hoặc mở khóa người dùng.</p><a class="button button-secondary" href="/admin/users">Quản lý người dùng</a></section>
+          <section class="action-card"><h2>Kiểm duyệt bình luận</h2><p>Duyệt, ẩn và quản lý các cuộc trao đổi.</p><a class="button button-secondary" href="/admin/comments">Quản lý bình luận</a></section>
+          <section class="action-card"><h2>Yêu cầu tác giả</h2><p>Xem và xét duyệt yêu cầu viết bài của độc giả.</p><a class="button button-secondary" href="/admin/author-requests">Duyệt tác giả</a></section>
+          <section class="action-card"><h2>Nhật ký hoạt động</h2><p>Tra cứu thao tác trên nội dung và tài khoản.</p><a class="button button-secondary" href="/admin/activity">Xem nhật ký</a></section>
+      </div></section>
         <% } %>
       </div>
     </div>

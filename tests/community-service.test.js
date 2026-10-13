@@ -47,7 +47,7 @@ test('ADMIN duyệt bình luận gửi thông báo cho người gửi và tác g
 test('Bình luận công khai chỉ lấy APPROVED trên bài PUBLISHED và chia 10/trang',async()=>{
  const {service,calls}=fixture();const result=await service.comments(2,{page:'2',sort:'oldest'});
  assert.equal(result.totalPages,2);assert.equal(result.filters.page,2);
- const query=calls.find(c=>c.sql?.includes('LIMIT ? OFFSET ?'));assert.match(query.sql,/APPROVED/);assert.match(query.sql,/PUBLISHED/);assert.match(query.sql,/ORDER BY id ASC/);assert.deepEqual(Array.from(query.values.slice(-2)),[10,10]);
+ const query=calls.find(c=>c.sql?.includes('LIMIT ? OFFSET ?'));assert.match(query.sql,/APPROVED/);assert.match(query.sql,/PUBLISHED/);assert.match(query.sql,/ORDER BY c\.id ASC/);assert.deepEqual(Array.from(query.values.slice(-2)),[10,10]);
 });
 test('Thông báo đánh dấu đã đọc luôn giới hạn vào người đang đăng nhập',async()=>{
  const {service,calls}=fixture();await service.markRead(verified,'15');await service.markRead(verified,'all');

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= mode === 'notifications' ? 'Thông báo' : mode === 'audit' ? 'Nhật ký' : 'Bình luận' %> | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=3"></head><body><%- include('../partials/header') %>
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= mode === 'notifications' ? 'Thông báo' : mode === 'audit' ? 'Nhật ký' : 'Bình luận' %> | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=4"></head><body><%- include('../partials/header') %>
 <main id="main-content">
 <h1><%= mode === 'notifications' ? 'Thông báo của bạn' : mode === 'audit' ? 'Nhật ký hoạt động' : mode === 'moderation' ? 'Quản lý bình luận' : mode === 'authored' ? 'Bình luận trên bài của tôi' : 'Bình luận của tôi' %></h1>
 <form class="filter-bar" method="get">

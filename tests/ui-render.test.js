@@ -33,7 +33,7 @@ test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ 
   assert.equal(files.length, 28);
   for (const file of files) {
     const html = render(file);
-    assert.match(html, /href="\/css\/site.css\?v=3"/, file);
+    assert.match(html, /href="\/css\/site.css\?v=4"/, file);
     assert.match(html, /id="main-content"/, file);
     assert.match(html, /aria-label="Điều hướng chính"/, file);
     assert.match(html, /<\/html>/, file);
@@ -142,4 +142,8 @@ test('Tài khoản Google-only có luồng đặt mật khẩu, không yêu cầ
 test('Bình luận có trả lời dùng ID và parent_id, nội dung luôn escape',()=>{
  const content='<script>reply()</script>';const html=render('public/detail.ejs',{commentPage:{total:1,totalPages:1,filters:{sort:'newest',page:1},rows:[{id:7,name:'Độc giả',content:'Gốc',reply_count:1,replies:[{id:8,name:'Tác giả',content}]}]}});
  assert.match(html,/id="comment-7"/);assert.match(html,/name="parent_id" value="7"/);assert.match(html,/id="comment-8"/);assert.ok(!html.includes(content));assert.match(html,/data-collapse/);
+});
+
+test('Không gian làm việc có hai cột đúng và không còn nút quay lại toàn cục',()=>{
+ const html=render('account.ejs');assert.match(html,/workspace-content/);assert.match(html,/Cá nhân & cộng đồng/);assert.match(html,/href="\/account\/google"/);assert.doesNotMatch(html,/data-back|class="back-button"/);
 });
