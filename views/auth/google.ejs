@@ -1,0 +1,8 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="<%= typeof referrerPolicy!=='undefined'?referrerPolicy:'no-referrer-when-downgrade' %>"><title>Tiếp tục với Google | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=3"><script src="/js/google-signin.js?v=3" defer></script><script src="https://accounts.google.com/gsi/client" async defer></script></head><body><%- include('../partials/header') %><main id="main-content" class="account-form-page"><h1><%= mode==='LINK'?'Liên kết tài khoản Google':'Tiếp tục với Google' %></h1>
+<p>Website xác minh đăng nhập bằng Google. Không nhập mật khẩu Google vào website.</p>
+<% if(mode==='LINK') { %><p>Chọn tài khoản Google có cùng email với tài khoản website hiện có.</p><% } else { %><p>Tài khoản mới nhận quyền độc giả. Nếu đã đăng ký bằng mật khẩu, hãy liên kết Google từ trang Tài khoản.</p><% } %>
+<input id="google-csrf" type="hidden" value="<%= csrfToken %>">
+<div id="g_id_onload" data-client_id="<%= clientId %>" data-callback="completeGoogleSignIn" data-nonce="<%= nonce %>" data-auto_prompt="false"></div>
+<div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="continue_with"></div>
+<p id="google-result" role="status"></p><p><a href="/auth/google">Thử lại đăng nhập Google</a> · <a href="/login">Đăng nhập bằng mật khẩu</a></p>
+</main><%- include('../partials/footer') %></body></html>

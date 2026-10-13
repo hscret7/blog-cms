@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đăng nhập | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=2">
-  <script src="/js/ui.js?v=2" defer></script>
+  <link rel="stylesheet" href="/css/site.css?v=3">
+
 </head>
 <body>
   <%- include('partials/header') %>
@@ -21,6 +21,7 @@
           <p><label for="password">Mật khẩu</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" class="password-toggle" data-toggle-password="password" aria-controls="password" aria-pressed="false">Hiện mật khẩu</button></p>
           <button type="submit">Đăng nhập →</button>
         </form>
+        <p><a class="button button-secondary" href="/auth/google">Tiếp tục với Google</a></p>
         <p class="auth-links"><a href="/forgot-password">Quên mật khẩu?</a><a href="/register">Tạo tài khoản</a></p>
       </section>
     </div>

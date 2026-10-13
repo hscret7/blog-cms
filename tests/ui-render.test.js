@@ -5,11 +5,12 @@ const test = require('node:test');
 const ejs = require('ejs');
 
 const views = path.resolve(__dirname, '../views');
-const admin = { id: 3, name: 'Quản trị <script>alert(1)</script>', email: 'admin@example.invalid', role: 'ADMIN', status: 'ACTIVE', email_verified_at: new Date(), session_version: 0 };
+const admin = { id: 3, name: 'Quản trị <script>alert(1)</script>', email: 'admin@example.invalid', role: 'ADMIN', status: 'ACTIVE', email_verified_at: new Date(), session_version: 0,has_password:1 };
 const author = { ...admin, id: 4, name: 'Tác giả', role: 'AUTHOR' };
 const category = { id: 1, name: 'Công nghệ', slug: 'cong-nghe', description: 'Một mô tả' };
 const post = { id: 5, title: 'Tiêu đề <script>alert(1)</script>', slug: 'bai-thu', content: '<img src=x onerror=alert(1)>\nDòng thứ hai', category_id: 1, author_name: author.name, category_name: category.name, status: 'DRAFT', cover_path: null };
 const fixture = {
+  mode:'mine',root:{id:7,name:'Độc giả',content:'Bình luận',is_deleted:0,created_at:new Date()},request:null,identity:null,clientId:'TEST.apps.googleusercontent.com',nonce:'a'.repeat(64),retryAfter:900,
   user: admin, currentUser: admin, currentPath: '/account', unreadCount: 2, query: {},
   mode: 'mine', rows: [], versions: [], selected: null,
   commentPage: { total: 0, rows: [], filters: { page: 1, sort: 'newest' }, totalPages: 1 },
@@ -29,10 +30,10 @@ function render(file, extra = {}) {
 
 test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ qua', () => {
   const files = fs.readdirSync(views, { recursive: true }).filter(file => file.endsWith('.ejs') && !file.startsWith('partials/') && !file.endsWith('/form.ejs'));
-  assert.equal(files.length, 21);
+  assert.equal(files.length, 28);
   for (const file of files) {
     const html = render(file);
-    assert.match(html, /href="\/css\/site.css\?v=2"/, file);
+    assert.match(html, /href="\/css\/site.css\?v=3"/, file);
     assert.match(html, /id="main-content"/, file);
     assert.match(html, /aria-label="Điều hướng chính"/, file);
     assert.match(html, /<\/html>/, file);
@@ -131,4 +132,14 @@ test('Bình luận công khai, thông báo và lịch sử escape nội dung', (
   assert.ok(!history.includes(content));
   const notices = render('community/list.ejs', { mode:'notifications',rows:[{id:1,message:content,target_path:'/account',read_at:null,created_at:new Date()}] });
   assert.ok(!notices.includes(content));
+});
+
+test('Tài khoản Google-only có luồng đặt mật khẩu, không yêu cầu mật khẩu chưa có',()=>{
+ const googleOnly={...author,has_password:0};const html=render('auth/form.ejs',{mode:'password',title:'Đổi mật khẩu',result:{},data:{},token:'',user:googleOnly,currentUser:googleOnly});
+ assert.match(html,/href="\/forgot-password"/);assert.ok(!html.includes('name="current_password"'));
+ const settings=render('auth/google-settings.ejs',{user:googleOnly,currentUser:googleOnly,identity:{provider:'GOOGLE'}});assert.ok(!settings.includes('action="/account/google/unlink"'));assert.match(settings,/phương thức đăng nhập duy nhất/);
+});
+test('Bình luận có trả lời dùng ID và parent_id, nội dung luôn escape',()=>{
+ const content='<script>reply()</script>';const html=render('public/detail.ejs',{commentPage:{total:1,totalPages:1,filters:{sort:'newest',page:1},rows:[{id:7,name:'Độc giả',content:'Gốc',reply_count:1,replies:[{id:8,name:'Tác giả',content}]}]}});
+ assert.match(html,/id="comment-7"/);assert.match(html,/name="parent_id" value="7"/);assert.match(html,/id="comment-8"/);assert.ok(!html.includes(content));assert.match(html,/data-collapse/);
 });

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= post.title %> | Blog CMS</title>
-  <link rel="stylesheet" href="/css/site.css?v=2">
+  <link rel="stylesheet" href="/css/site.css?v=3">
 </head>
 <body>
   <%- include('../partials/header') %>
@@ -20,7 +20,7 @@
       <section class="comments-section" aria-labelledby="comments-heading">
         <h2 id="comments-heading">Bình luận (<%= commentPage.total %>)</h2>
         <form method="get"><label for="comment-sort">Thứ tự bình luận</label><select id="comment-sort" name="sort"><option value="newest" <%= commentPage.filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= commentPage.filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select><button>Xem</button></form>
-        <% commentPage.rows.forEach(comment=>{ %><section class="comment-card"><strong><%= comment.name %></strong><p class="post-content"><%= comment.content %></p></section><% }); %>
+        <% commentPage.rows.forEach(comment=>{ %><%- include('../partials/comment',{comment}) %><% }); %>
         <% if(!commentPage.rows.length) { %><p>Chưa có bình luận được duyệt.</p><% } %>
         <nav class="pagination" aria-label="Phân trang bình luận">
           <% if(commentPage.filters.page>1) { %><a href="?sort=<%= commentPage.filters.sort %>&page=<%= commentPage.filters.page-1 %>#comments-heading">Trang trước</a><% } %>
@@ -28,7 +28,7 @@
           <% if(commentPage.filters.page<commentPage.totalPages) { %><a href="?sort=<%= commentPage.filters.sort %>&page=<%= commentPage.filters.page+1 %>#comments-heading">Trang sau</a><% } %>
         </nav>
         <% if(typeof currentUser!=='undefined' && currentUser) { %>
-          <% if(currentUser.email_verified_at) { %><form method="post" action="/posts/<%= post.id %>/comments"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="comment-content">Bình luận của bạn (tối đa 2.000 ký tự)</label><textarea id="comment-content" name="content" required></textarea><button>Gửi bình luận để duyệt</button></form>
+          <% if(currentUser.email_verified_at) { %><form method="post" action="/posts/<%= post.id %>/comments"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="comment-content">Bình luận của bạn (tối đa 2.000 ký tự)</label><textarea id="comment-content" name="content" required></textarea><button>Gửi bình luận</button><p><%= currentUser.role==='ADMIN'||(currentUser.role==='AUTHOR'&&currentUser.id===post.author_id)?'Bình luận của bạn được hiển thị ngay.':'Bình luận của bạn cần quản trị viên duyệt.' %></p></form>
           <% } else { %><p><a href="/account">Xác minh email</a> trước khi bình luận.</p><% } %>
         <% } else { %><p><a href="/login">Đăng nhập</a> hoặc <a href="/register">đăng ký</a> để bình luận.</p><% } %>
       </section>

@@ -19,7 +19,7 @@ test('Kết quả nghiệp vụ thất bại rollback thay vì commit',async()=>
 });
 test('Thông báo xuất bản chỉ gửi người theo dõi đang hoạt động và xác minh',async()=>{
  const {activity,state,c}=fixture();await activity.published(c,2);const insert=state.calls.find(c=>c.sql.startsWith('INSERT INTO notifications'));
- assert.match(insert.sql,/category_follows/);assert.match(insert.sql,/email_verified_at IS NOT NULL/);assert.match(insert.sql,/status='ACTIVE'/);assert.match(insert.sql,/f.user_id<>\?/);assert.equal(insert.values[0],'/posts/bai-thu');
+ assert.match(insert.sql,/category_follows/);assert.match(insert.sql,/email_verified_at IS NOT NULL/);assert.match(insert.sql,/status='ACTIVE'/);assert.match(insert.sql,/f.user_id<>\?/);assert.equal(insert.values[1],'/posts/bai-thu');
 });
 test('Từ chối đường dẫn thông báo bên ngoài',async()=>{
  const {activity,c}=fixture();for(const url of ['https://example.org','//example.org'])await assert.rejects(()=>activity.notify(c,4,'Thử',url));

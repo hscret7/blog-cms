@@ -1,0 +1,4 @@
+<div class="page-context">
+  <a class="back-button" data-back href="<%= typeof backUrl !== 'undefined' ? backUrl : '/' %>" aria-label="Quay lại bước trước"><span aria-hidden="true">←</span> Quay lại</a>
+  <% if (typeof feedback !== 'undefined' && feedback) { %><p class="feedback-banner" role="status" <% if (feedback.draftKey) { %>data-clear-draft="<%= feedback.draftKey %>"<% } %>><%= feedback.message %></p><% } %>
+</div>

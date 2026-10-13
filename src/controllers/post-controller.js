@@ -1,3 +1,4 @@
+const { setFeedback } = require('../middlewares/ui-context');
 const postService = require('../services/post-service');
 const categoryRepository = require('../repositories/category-repository');
 const { getCsrfToken } = require('../middlewares/csrf');
@@ -53,6 +54,7 @@ async function createPost(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -120,6 +122,7 @@ async function updatePost(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -133,6 +136,7 @@ async function publishPost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -146,6 +150,7 @@ async function unpublishPost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -159,6 +164,7 @@ async function deletePost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 

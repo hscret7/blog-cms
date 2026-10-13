@@ -24,6 +24,7 @@ function finishOperation(req, res, result) {
     });
   }
 
+  require('../middlewares/ui-context').setFeedback(req,'Đã cập nhật ảnh đại diện.');
   return res.redirect(303, `/manage/posts/${result.id}/edit`);
 }
 

@@ -1,0 +1,12 @@
+<section class="comment-card" id="comment-<%= comment.id %>">
+  <strong><%= comment.name %></strong>
+  <p class="post-content"><%= comment.is_deleted ? 'Bình luận đã bị xóa.' : comment.content %></p>
+  <% if(comment.created_at) { %><small><%= new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(comment.created_at) %></small><% } %>
+  <% if(!comment.is_deleted && typeof currentUser!=='undefined' && currentUser?.email_verified_at) { %>
+  <details data-reply><summary>Trả lời</summary><form method="post" action="/posts/<%= post.id %>/comments"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="parent_id" value="<%= comment.id %>"><label for="reply-<%= comment.id %>">Trả lời <%= comment.name %></label><textarea id="reply-<%= comment.id %>" name="content" required></textarea><button>Gửi trả lời</button><button type="button" data-collapse class="button-secondary">Hủy</button></form></details>
+  <% } %>
+  <% if(comment.replies?.length) { %><details data-replies><summary>Xem <%= comment.reply_count %> câu trả lời</summary>
+    <% for(const reply of comment.replies) { %><section class="reply-card" id="comment-<%= reply.id %>"><strong><%= reply.name %></strong><p class="post-content"><%= reply.content %></p></section><% } %>
+    <a href="/posts/<%= post.slug %>/comments/<%= comment.id %>">Xem toàn bộ cuộc trao đổi →</a><button type="button" data-collapse class="button-secondary">Thu gọn câu trả lời</button>
+  </details><% } %>
+</section>

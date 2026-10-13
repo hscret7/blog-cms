@@ -19,7 +19,7 @@ function fixture(actor = verified, { owner = 4, published = true, commentStatus 
 }
 test('Độc giả xác minh gửi bình luận PENDING, thông báo ADMIN và ghi nhật ký', async () => {
   const { service,calls }=fixture();assert.equal((await service.mutate(verified,'create','2',{content:'Bình luận'})).success,true);
-  assert.ok(calls.some(c=>c.sql?.startsWith('INSERT INTO comments')&&c.sql.includes("'PENDING'")));
+  assert.ok(calls.some(c=>c.sql?.startsWith('INSERT INTO comments')&&c.values.at(-1)==='PENDING'));
   assert.ok(calls.some(c=>c.audit?.[1]==='COMMENT_CREATE'));
   assert.ok(calls.some(c=>c.sql?.startsWith('INSERT INTO notifications')));
 });
@@ -37,7 +37,7 @@ test('Độc giả không sửa, xóa hoặc kiểm duyệt bình luận của n
 });
 test('Sửa bình luận của mình phải quay về PENDING',async()=>{
  const {service,calls}=fixture();assert.equal((await service.mutate(verified,'edit','7',{content:'Nội dung mới'})).success,true);
- assert.ok(calls.some(c=>c.sql?.includes("status='PENDING'")));
+ assert.ok(calls.some(c=>c.sql?.startsWith('UPDATE comments SET content') && c.values[1]==='PENDING'));
 });
 test('ADMIN duyệt bình luận gửi thông báo cho người gửi và tác giả',async()=>{
  const admin={...verified,id:3,role:'ADMIN'};const {service,calls}=fixture(admin,{commentStatus:'PENDING'});await service.mutate(admin,'moderate','7',{status:'APPROVED'});

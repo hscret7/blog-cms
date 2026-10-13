@@ -21,6 +21,7 @@
     "express-mysql-session": "3.0.3",
     "express-rate-limit": "8.7.1",
     "express-session": "1.19.0",
+    "google-auth-library": "11.3.0",
     "multer": "2.4.0",
     "mysql2": "3.24.5",
     "nodemailer": "10.1.0",

@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><%= title %> | Blog CMS</title><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="/css/site.css?v=2"><script src="/js/ui.js?v=2" defer></script></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><%= title %> | Blog CMS</title><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="/css/site.css?v=3"></head>
 <body>
   <%- include('../partials/header') %>
   <main id="main-content" class="account-form-page">
     <h1><%= title %></h1>
     <% if (result.message) { %><p role="<%= result.success ? 'status' : 'alert' %>"><%= result.message %></p><% } %>
     <% if (result.errors) { %><ul><% Object.values(result.errors).forEach(message => { %><li><%= message %></li><% }); %></ul><% } %>
-    <% if (!result.success) { %>
+    <% if (mode==='register') { %><p><a class="button button-secondary" href="/auth/google">Tiếp tục với Google</a></p><% } %>
+    <% if (mode === 'password') { %><p><a href="/forgot-password">Quên mật khẩu hiện tại?</a></p><% if(typeof currentUser!=='undefined' && currentUser && !currentUser.has_password) { %><p>Bạn đang sử dụng đăng nhập Google. Để tạo mật khẩu website, hãy <a href="/forgot-password">đặt mật khẩu qua email</a>.</p><% } %><% } %>
+    <% if (!result.success && !(mode==='password' && typeof currentUser!=='undefined' && currentUser && !currentUser.has_password)) { %>
       <form class="form-panel" action="<%= action %>" method="post">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <% if (['verify','reset'].includes(mode)) { %><input type="hidden" name="token" id="email-token" value="<%= token %>"><p>Hãy mở liên kết được gửi đến email của bạn. Liên kết chỉ có hiệu lực một lần.</p><% } %>
+        <% if (mode==='register') { %><p><label for="interest">Bạn muốn tham gia với tư cách nào?</label><select id="interest" name="interest"><option value="reader">Độc giả</option><option value="author_request" <%= data.interest==='author_request'?'selected':'' %>>Muốn trở thành tác giả (cần duyệt)</option></select></p><p><label for="author-reason">Chủ đề muốn viết (điền nếu xin quyền tác giả)</label><textarea id="author-reason" name="author_reason"><%= data.author_reason||'' %></textarea></p><% } %>
+        <% if (mode==='profile' && typeof currentUser!=='undefined' && currentUser && !currentUser.has_password) { %><p>Để đổi email website, hãy <a href="/forgot-password">đặt mật khẩu qua email</a> trước. Bạn vẫn sửa được tên hiển thị.</p><% } %>
         <% if (['register','profile'].includes(mode)) { %><p><label for="name">Tên hiển thị</label><input id="name" name="name" value="<%= data.name || '' %>" required></p><% } %>
         <% if (['register','forgot','profile'].includes(mode)) { %><p><label for="email">Email</label><input id="email" type="email" name="email" maxlength="254" value="<%= data.email || '' %>" autocomplete="email" required></p><% } %>
         <% if (['password','profile'].includes(mode)) { %><p><label for="current-password">Mật khẩu hiện tại<%= mode === 'profile' ? ' (chỉ cần khi đổi email)' : '' %></label><input id="current-password" type="password" name="current_password" autocomplete="current-password" <%= mode === 'password' ? 'required' : '' %>><button class="password-toggle" type="button" data-toggle-password="current-password" aria-pressed="false">Hiện mật khẩu</button></p><% } %>
@@ -21,7 +25,7 @@
         <p><button type="submit"><%= submitLabel %></button><a href="/login">Về đăng nhập</a><a href="/account">Về tài khoản</a></p>
       </form>
     <% } else { %><p><a class="button" href="/account">Về tài khoản</a> <a href="/login">Đăng nhập</a></p><% } %>
-    <% if (mode === 'register') { %><p>Bạn đăng ký với vai trò độc giả. Quản trị viên cấp quyền tác giả khi cần.</p><% } %>
+    <% if (mode === 'register') { %><p>Bạn đăng ký với vai trò độc giả. Nếu muốn viết bài, chọn yêu cầu tác giả; ADMIN sẽ xét duyệt.</p><% } %>
   </main>
   <%- include('../partials/footer') %>
 </body></html>

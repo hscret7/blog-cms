@@ -1,3 +1,5 @@
+> Bổ sung hiện tại: xem [hướng dẫn tương tác và Google](cap-nhat-tuong-tac-google.md), gồm migration 005, trả lời một cấp, duyệt yêu cầu AUTHOR và danh tính Google. Nội dung bên dưới mô tả mốc trước đó.
+
 # Cập nhật tài khoản độc giả và chức năng cộng đồng
 
 ## Tiến độ

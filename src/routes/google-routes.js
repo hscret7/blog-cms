@@ -1,0 +1,11 @@
+const express=require('express');const {rateLimit}=require('express-rate-limit');
+const {requireAuth,requireVerified}=require('../middlewares/auth');const {requireCsrf}=require('../middlewares/csrf');
+const controller=require('../controllers/google-controller');const router=express.Router();
+const limiter=rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:'draft-8',legacyHeaders:false});
+const json=express.json({limit:'16kb'}),form=express.urlencoded({extended:false,limit:'12kb',parameterLimit:5});
+router.get('/auth/google',limiter,controller.start);
+router.post('/auth/google/complete',limiter,json,requireCsrf,controller.complete);
+router.get('/account/google',requireAuth,controller.settings);
+router.post('/account/google/link',requireAuth,requireVerified,limiter,form,requireCsrf,controller.link);
+router.post('/account/google/unlink',requireAuth,limiter,form,requireCsrf,controller.unlink);
+module.exports=router;

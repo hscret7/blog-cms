@@ -34,6 +34,9 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
   async function register(input) {
     const validation = validateUserInput({ ...input, role: 'READER' }, { creating: true });
     if (!validation.isValid) return fail(422, 'Vui lòng kiểm tra thông tin đăng ký.', validation.errors);
+    const interest=input?.interest || 'reader';
+    if (!['reader','author_request'].includes(interest)) return fail(422,'Lựa chọn tham gia không hợp lệ.');
+    if (interest==='author_request' && !require('../validators/author-request-validator').validReason(input.author_reason)) return fail(422,'Hãy điền chủ đề muốn viết, tối đa 1.000 ký tự.');
     mail.assertConfigured();
     const hash = await hashPassword(input.password);
     let result;
@@ -42,6 +45,7 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
         const [insert] = await c.execute("INSERT INTO users(name,email,password_hash,role,status) VALUES (?,?,?,'READER','ACTIVE')", [validation.data.name, validation.data.email, hash]);
         const raw = await issue(c, { id: insert.insertId }, 'VERIFY_EMAIL');
         await audit(c, insert.insertId, 'ACCOUNT_REGISTER');
+        if (interest==='author_request') await c.execute("INSERT INTO author_requests(user_id,reason,status) VALUES (?,?,'PENDING')",[insert.insertId,input.author_reason.trim()]);
         return { success: true, raw };
       });
     } catch (error) {
@@ -99,7 +103,11 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
       const [tokens] = await c.execute('SELECT id FROM account_tokens WHERE token_hash = ? AND purpose = ? AND used_at IS NULL AND expires_at > UTC_TIMESTAMP() FOR UPDATE', [digest, purpose]);
       if (!tokens.length) return fail(400, 'Liên kết không hợp lệ hoặc đã hết hạn.');
       await c.execute('UPDATE account_tokens SET used_at = UTC_TIMESTAMP() WHERE id = ?', [tokens[0].id]);
-      if (purpose === 'VERIFY_EMAIL') await c.execute('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [users[0].id]);
+      if (purpose === 'VERIFY_EMAIL') {
+        await c.execute('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [users[0].id]);
+        const [requests]=await c.execute("SELECT user_id FROM author_requests WHERE user_id=? AND status='PENDING'",[users[0].id]);
+        if(requests.length) await c.execute("INSERT INTO notifications(user_id,message,target_path) SELECT id,'Có yêu cầu tác giả đã xác minh email.',? FROM users WHERE role='ADMIN' AND status='ACTIVE'",['/admin/author-requests?user='+users[0].id]);
+      }
       else {
         await c.execute('UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [hash, users[0].id]);
         await c.execute('UPDATE account_tokens SET used_at = UTC_TIMESTAMP() WHERE user_id = ? AND purpose = ? AND used_at IS NULL', [users[0].id, purpose]);

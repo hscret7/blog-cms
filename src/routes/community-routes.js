@@ -7,6 +7,10 @@ const router=express.Router();
 const parse=express.urlencoded({extended:false,limit:'20kb',parameterLimit:10});
 const limiter=rateLimit({windowMs:60000,limit:5,standardHeaders:'draft-8',legacyHeaders:false,
   handler(req,res){res.set('Cache-Control','no-store');res.status(429).json({message:'Bạn gửi bình luận quá nhanh. Vui lòng thử lại sau.'});}});
+router.get('/comments/:id/go',controller.destination);
+router.get('/posts/:slug/comments/:id',controller.thread);
+router.post('/notifications/:id/hide',requireAuth,parse,requireCsrf,controller.visibility(true));
+router.post('/notifications/:id/restore',requireAuth,parse,requireCsrf,controller.visibility(false));
 router.get('/manage/comments',requireAuth,requireRole('ADMIN','AUTHOR'),controller.list('authored'));
 router.get('/my/comments',requireAuth,controller.list('mine'));
 router.post('/posts/:id/comments',requireAuth,requireVerified,limiter,parse,requireCsrf,controller.mutate('create'));

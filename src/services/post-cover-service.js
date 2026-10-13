@@ -149,6 +149,7 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
         connection
       );
     } else if (operation === 'delete') {
+      await connection.execute('DELETE FROM comments WHERE post_id = ? AND parent_id IS NOT NULL', [post.id]);
       await connection.execute('DELETE FROM comments WHERE post_id = ?', [post.id]);
       const affectedRows = await repository.remove(
         post.id,

@@ -1,3 +1,4 @@
+const { setFeedback } = require('../middlewares/ui-context');
 const service = require('../services/admin-user-service');
 const { getCsrfToken } = require('../middlewares/csrf');
 
@@ -59,6 +60,7 @@ async function createUser(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -113,6 +115,7 @@ async function updateUser(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -124,6 +127,7 @@ async function lockUser(req, res) {
     return renderError(req, res, result);
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -135,6 +139,7 @@ async function unlockUser(req, res) {
     return renderError(req, res, result);
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 

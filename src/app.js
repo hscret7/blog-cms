@@ -82,16 +82,19 @@ app.get('/health/ready', async (req, res) => {
 // Session nhận diện người đọc, không tạo phiên mới nếu không thay đổi dữ liệu.
 app.use(sessionMiddleware);
 app.use(optionalAuth);
+app.use(require('./middlewares/ui-context').uiContext);
 app.use(async (req, res, next) => {
   res.locals.unreadCount = 0;
   if (req.user) {
-    const [rows] = await pool.execute('SELECT COUNT(*) total FROM notifications WHERE user_id=? AND read_at IS NULL', [req.user.id]);
+    const [rows] = await pool.execute('SELECT COUNT(*) total FROM notifications WHERE user_id=? AND read_at IS NULL AND hidden_at IS NULL', [req.user.id]);
     res.locals.unreadCount = Number(rows[0].total);
   }
   next();
 });
 app.use(publicPostRoutes);
+app.use(require('./routes/google-routes'));
 app.use(accountRoutes);
+app.use(require('./routes/author-request-routes'));
 app.use(communityRoutes);
 app.use(coverRoutes);
 app.use(authRoutes);

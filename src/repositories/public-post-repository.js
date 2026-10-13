@@ -57,6 +57,7 @@ async function findPublishedPage(
   const [rows] = await pool.execute(
     `SELECT
        p.id,
+       p.author_id,
        p.title,
        p.slug,
        p.cover_path,
@@ -80,6 +81,7 @@ async function findPublishedBySlug(slug) {
   const [rows] = await pool.execute(
     `SELECT
        p.id,
+       p.author_id,
        p.title,
        p.slug,
        p.content,

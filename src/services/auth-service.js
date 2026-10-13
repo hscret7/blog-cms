@@ -36,7 +36,7 @@ async function authenticate(email, password) {
   const user = await findByEmail(normalizedEmail);
 
   const hash = user
-    ? user.password_hash
+    ? (user.password_hash || await getDummyHash())
     : await getDummyHash();
 
   const passwordMatches = await verifyPassword(hash, password);

@@ -6,8 +6,8 @@ a { color:var(--green); text-underline-offset:4px; }
 a:hover { color:#103e31; }
 button,input,select,textarea { font:inherit; }
 :focus-visible { outline:3px solid #b77a16; outline-offset:4px; }
-.skip-link { position:fixed; z-index:10; left:16px; top:-100px; padding:12px 20px; background:var(--ink); color:white; border-radius:8px; }
-.skip-link:focus { top:12px; }
+.skip-link { position:fixed; z-index:10; left:16px; top:12px; transform:translateY(-200%); padding:12px 20px; background:var(--ink); color:white; border-radius:8px; }
+.skip-link:focus { transform:translateY(0); }
 .site-header { background:var(--white); border-bottom:1px solid var(--line); }
 .header-inner { max-width:1240px; padding:22px 32px; margin:auto; display:flex; align-items:center; justify-content:space-between; gap:24px; }
 .brand { display:flex; align-items:center; gap:12px; color:var(--ink); font-size:21px; font-weight:750; text-decoration:none; white-space:nowrap; }
@@ -137,3 +137,13 @@ td span { font-size:12px; color:var(--muted); }
 [role=status] { padding:16px; background:var(--mint); border-radius:8px; }
 
 .comment-card > small { display:block; margin-top:12px; color:var(--muted); white-space:nowrap; }
+
+.page-context { max-width:1176px; margin:18px auto; padding:0 24px; }
+.back-button { display:inline-flex; gap:8px; align-items:center; font-size:14px; text-decoration:none; }
+.back-button span { font-size:22px; }
+.feedback-banner { margin:16px 0; padding:16px; border-radius:10px; background:var(--mint); }
+.comment-card:target,.reply-card:target { outline:3px solid #b77a16; outline-offset:4px; }
+.reply-card { margin:16px 0; padding:16px; border-left:3px solid var(--line); background:var(--paper); }
+.comment-card details { margin:12px 0; }
+summary { cursor:pointer; color:var(--green); font-weight:600; }
+.draft-banner { padding:16px; border:1px solid var(--line); background:var(--mint); border-radius:10px; margin:16px 0; }

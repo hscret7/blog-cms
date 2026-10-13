@@ -15,13 +15,15 @@ function appWithoutDatabase() {
       if (name === 'express') return express;
       if (name.startsWith('node:')) return require(name);
       if (name.startsWith('./routes/')) return express.Router();
+      if (name === './middlewares/ui-context') return require('../src/middlewares/ui-context');
       if (name === './middlewares/auth') return { optionalAuth(req,res,next) { next(); } };
       if (name === './config/database') return { query: async () => [] };
       if (name === './config/session') return { sessionMiddleware(req, res, next) { sessionRequests++; next(); } };
       throw new Error(`Unexpected dependency: ${name}`);
     }
   };
-  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../src/app.js'), 'utf8'), context);
+  const execute = new Function('require','module','__dirname','process','console',fs.readFileSync(path.resolve(__dirname, '../src/app.js'), 'utf8'));
+  execute(context.require,context.module,context.__dirname,context.process,console);
   return { app: context.module.exports, count: () => sessionRequests };
 }
 

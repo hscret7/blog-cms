@@ -96,3 +96,9 @@ test('Argon2id băm và kiểm tra mật khẩu Unicode', async () => {
   assert.equal(await passwords.verifyPassword(hash,raw),true);
   assert.equal(await passwords.verifyPassword(hash,'incorrect password'),false);
 });
+
+test('Chọn muốn làm tác giả chỉ tạo yêu cầu, không nhận AUTHOR khi đăng ký',async()=>{
+ const f=fixture();const result=await f.service.register({...input,interest:'author_request',author_reason:'Viết về công nghệ'});assert.equal(result.success,true);
+ const insert=f.state.calls.find(c=>c.sql.startsWith('INSERT INTO users'));assert.match(insert.sql,/'READER'/);assert.ok(f.state.calls.some(c=>c.sql.startsWith('INSERT INTO author_requests')));
+ const invalid=fixture();assert.equal((await invalid.service.register({...input,interest:'ADMIN'})).status,422);assert.equal(invalid.state.calls.length,0);
+});

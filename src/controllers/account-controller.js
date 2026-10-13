@@ -23,10 +23,11 @@ function action(mode, fn) {
   return async (req, res) => {
     try {
       const result = await fn(req);
-      if (result.success && mode === 'profile' && !result.emailChanged) return res.redirect(303, '/account');
+      if (result.success && mode === 'profile' && !result.emailChanged) { require('../middlewares/ui-context').setFeedback(req,result.message);return res.redirect(303, '/account'); }
       return render(req, res, mode, result, {
         name: typeof req.body?.name === 'string' ? req.body.name.slice(0, 200) : '',
-        email: typeof req.body?.email === 'string' ? req.body.email.slice(0, 254) : ''
+        email: typeof req.body?.email === 'string' ? req.body.email.slice(0, 254) : '',
+        interest:req.body?.interest==='author_request'?'author_request':'reader',author_reason:typeof req.body?.author_reason==='string'?req.body.author_reason.slice(0,2000):''
       });
     } catch (error) {
       console.error('Thao tác tài khoản thất bại:', error.code || 'ACCOUNT_FAILED');

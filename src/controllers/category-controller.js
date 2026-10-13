@@ -1,3 +1,4 @@
+const { setFeedback } = require('../middlewares/ui-context');
 const categoryService = require('../services/category-service');
 const { getCsrfToken } = require('../middlewares/csrf');
 
@@ -47,6 +48,7 @@ async function createCategory(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật danh mục.');
   return res.redirect(303, '/admin/categories');
 }
 
@@ -112,6 +114,7 @@ async function updateCategory(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật danh mục.');
   return res.redirect(303, '/admin/categories');
 }
 
@@ -151,6 +154,7 @@ async function deleteCategory(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật danh mục.');
   return res.redirect(303, '/admin/categories');
 }
 
