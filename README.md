@@ -1,13 +1,14 @@
-> Cập nhật mới: [điều hướng, trả lời bình luận và Google](docs/cap-nhat-tuong-tac-google.md). Chạy migration **005 đúng một lần** sau 003/004 trước khi khởi động code mới.
+> Bản đang phát triển nằm trên nhánh `codex/cms-ui-navigation`; PR #1 chưa merge `main`.
+> Database hiện tại của sinh viên đã áp dụng 001–005: **không chạy lại migration khi cập nhật các bản sửa thông báo/phiên**.
+> Quy tắc bình luận và thông báo hiện tại: [docs/thong-bao-binh-luan.md](docs/thong-bao-binh-luan.md).
 
 # Hệ thống Blog CMS
 
 Cài trên máy mới: [hướng dẫn đầy đủ từ database rỗng](docs/cai-moi.md).
 Kết quả rà soát trước báo cáo: [docs/ra-soat-du-an.md](docs/ra-soat-du-an.md).
 
-> Nhánh giao diện hiện có migration 003/004 và chức năng cộng đồng.
-> Trước khi chạy image mới, làm theo [hướng dẫn cập nhật đầy đủ](docs/cap-nhat-cong-dong.md):
-> lấy mã → sao lưu → migration → cấu hình SMTP → build → kiểm tra trên giao diện.
+> Cài mới xem `docs/cai-moi.md`. Các tài liệu cập nhật 003/004/005 mô tả từng mốc lịch sử, không phải lệnh phải chạy lại mỗi lần pull.
+> `docs/ra-soat-du-an.md` là bản rà soát kỹ thuật, không phải báo cáo nộp môn.
 
 
 Đề tài số 7 môn Triển khai và Quản trị Hệ thống Phần mềm.
@@ -98,10 +99,9 @@ Hướng dẫn triển khai và minh chứng log tập trung: [docs/log-tap-trun
 - ADMIN gửi POST thiếu CSRF bị từ chối với HTTP 403.
 
 Test tự động cho validation danh mục và giới hạn đăng nhập:
-10 mục PASS, 0 FAIL.
+10 mục PASS, 0 FAIL tại mốc validation ban đầu; số này không phải tổng test hiện tại.
 
-Chưa kiểm thử qua giao diện trường hợp xóa danh mục đang có
-bài viết liên kết; sẽ thực hiện khi triển khai chức năng bài viết.
+Ca còn cần nghiệm thu riêng trên giao diện: xóa danh mục đang có bài viết phải bị chặn; không coi có khóa ngoại là bằng chứng đã chạy ca UI này.
 
 ### Kiểm thử tạo và sửa bài nháp
 
@@ -115,7 +115,7 @@ bài viết liên kết; sẽ thực hiện khi triển khai chức năng bài v
 - ADMIN sửa bài AUTHOR nhưng không thay đổi tác giả.
 - POST tạo và sửa bài thiếu CSRF bị từ chối với HTTP 403.
 - Bộ test validation bài viết, danh mục và giới hạn đăng nhập:
-  17 mục PASS, 0 FAIL.
+  17 mục PASS, 0 FAIL tại mốc tạo/sửa bài ban đầu.
 
 Danh sách quản lý đã có mã phân trang; chưa kiểm chứng chuyển trang
 với dữ liệu trên 20 bài.
@@ -133,7 +133,7 @@ với dữ liệu trên 20 bài.
 - Ba thao tác thiếu CSRF bị từ chối với HTTP 403.
 - Hủy xác nhận xóa giữ lại bài; xác nhận xóa bài thử thành công.
 
-Bộ test tự động hiện tại: 17 mục PASS, 0 FAIL.
+Bộ test tại mốc triển khai xuất bản ban đầu: 17 mục PASS, 0 FAIL.
 Các test này kiểm tra validation và giới hạn đăng nhập;
 nghiệp vụ xuất bản và xóa được kiểm thử thủ công.
 
@@ -183,7 +183,7 @@ Chạy toàn bộ các bộ kiểm thử từ thư mục gốc dự án:
 node --test tests/*.test.js
 ```
 
-Kết quả lần kiểm tra gần nhất: 131 test đạt, 0 thất bại.
+Kết quả kiểm tra mã hiện tại (16/10/2026): **146 test Node đạt, 0 thất bại**; thêm **8 test Python** bằng `python3 tests/log-targets.test.py`. Các ca database dùng fixture, không thay thế nghiệm thu MySQL thật.
 
 Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
 xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
@@ -219,9 +219,7 @@ Biểu mẫu lỗi không điền lại mật khẩu.
 Danh sách và trang sửa không lấy hoặc hiển thị hash mật khẩu.
 
 Khóa tài khoản giữ lại người dùng và bài viết.
-Phiên của tài khoản bị khóa bị hủy khi người dùng gửi yêu cầu
-tiếp theo qua middleware xác thực. Sau khi mở khóa,
-người dùng phải đăng nhập lại nếu phiên cũ đã bị hủy.
+Khóa tài khoản tăng `session_version`. Phiên cũ bị từ chối ở yêu cầu tiếp theo, kể cả ADMIN đã mở khóa trước yêu cầu đó. Đổi email/vai trò qua ADMIN cũng thu hồi phiên cũ. Middleware và transaction ghi kiểm tra phiên bản phiên.
 
 Các thao tác sửa vai trò và trạng thái sử dụng transaction,
 khóa hàng bằng SELECT ... FOR UPDATE và kiểm tra lại quyền
@@ -233,7 +231,7 @@ của ADMIN thực hiện thao tác.
 - Từ chối email trùng khi tạo và sửa với HTTP 409.
 - Sửa thông tin và lưu không đổi nội dung thành công.
 - Khóa, hủy xác nhận khóa, mở khóa và đăng nhập lại.
-- Vai trò mới có hiệu lực ở yêu cầu tiếp theo của phiên hiện tại.
+- Vai trò được đọc lại từ database; bản sửa thu hồi phiên khi ADMIN đổi vai trò cần nghiệm thu đăng nhập lại trên máy sinh viên.
 - Chặn tự hạ quyền và tự khóa với HTTP 409.
 - ID sai định dạng trả HTTP 400; ID không tồn tại trả HTTP 404.
 - AUTHOR bị chặn truy cập và gửi thao tác quản trị với HTTP 403.
@@ -654,8 +652,7 @@ connection pool. Thời gian chờ tối đa là 10 giây.
   `/health/ready`, `/account` hoặc `/logout`.
 - Sử dụng `MemoryStore` cho phiên bản một tiến trình hiện tại. Bộ đếm sẽ bị mất
   khi khởi động lại ứng dụng và không được chia sẻ giữa nhiều tiến trình hoặc container.
-- Giữ nguyên cấu hình `trust proxy` mặc định (chưa bật `trust proxy = true` và không
-  tự lấy IP từ `X-Forwarded-For`). Proxy ngược Nginx sẽ được cấu hình ở giai đoạn sau.
+- Compose cấu hình app chỉ tin proxy IPv4 `172.26.0.10`. Nginx ghi đè `X-Forwarded-For` bằng địa chỉ kết nối; không dùng `trust proxy = true`. Khi chạy trực tiếp trong WSL, để `TRUSTED_PROXY_IP` trống.
 
 ### Quản lý danh mục (ADMIN)
 
@@ -793,17 +790,17 @@ Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 - Đăng ký READER, xác minh email, quên/đặt lại mật khẩu bằng liên kết một lần.
 - Hồ sơ sửa tên/email; đổi email yêu cầu mật khẩu và xác minh lại.
 - Đổi/reset mật khẩu tăng session_version để vô hiệu hóa phiên cũ.
-- Bình luận một cấp: gửi/sửa thành PENDING, ADMIN duyệt/ẩn/xóa;
-  bản công khai chỉ APPROVED trên bài PUBLISHED, 10 bình luận/trang.
+- Trả lời một cấp; độc giả và AUTHOR trên bài người khác gửi/sửa thành PENDING. ADMIN và AUTHOR trên bài của mình được hiển thị ngay; nội dung không đổi không gửi lại thông báo.
+- ADMIN duyệt/ẩn/xóa; công khai chỉ APPROVED trên bài PUBLISHED, phân trang 10 bình luận gốc hoặc 10 câu trả lời/trang.
+- Thông báo phân biệt sự kiện đã xảy ra và trạng thái bình luận hiện tại; mở qua nút có CSRF để đánh dấu đã đọc; việc duyệt cập nhật đã đọc cho các thông báo kiểm duyệt liên quan.
 - Theo dõi danh mục, nhận thông báo trong website; đánh dấu đã đọc/tất cả.
 - Quản lý có tìm kiếm, bộ lọc, sắp xếp và phân trang.
 - Nhật ký ADMIN; lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
 - Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
 
-Đã chạy 131 test trong môi trường độc lập, 0 thất bại; npm audit 0 lỗ hổng.
-Các service mới được kiểm thử với database/SMTP giả lập, chưa kiểm chứng
-migration hoặc email thực tế trên WSL. Kiểm tra UI bằng Chromium với fixture:
-30 trang × 2 kích thước, không tràn viewport/lỗi JS; không thay thế CRUD thật.
+Bộ test hiện tại: 146 Node + 8 Python đạt; npm audit tại đợt rà soát 16/10 báo 0 lỗ hổng.
+Database migrations 003–005 đã được sinh viên cung cấp kết quả chạy thành công; Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật và các bản sửa nghiệp vụ thông báo hiện tại vẫn cần nghiệm thu riêng.
+Kết quả Chromium với fixture ở mốc giao diện trước đây không thay thế kiểm tra UI bản sửa hiện tại hoặc CRUD trên MySQL thật.
 Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md).
 
 ## Cấu hình và dữ liệu
@@ -825,7 +822,7 @@ kiểm tra cấu hình, chạy Loki/Promtail, mở Grafana và demo ba query Log
   tạo và ba query có kết quả thật; không báo hoàn tất nếu script FAIL.
 - Promtail EOL; dùng cho yêu cầu môn học local, chuyển Alloy khi vận hành dài hạn.
 - Đã kiểm tra độc lập bằng native binaries và log fixture, 8 test chọn nguồn
-  log đạt. Docker/Grafana thực tế trên máy sinh viên cần kiểm chứng tiếp.
+  log đạt. Sinh viên đã cung cấp kết quả request 404 qua Nginx→Promtail→Loki và ba query có dữ liệu trên máy thật. Ảnh dashboard/Explore vẫn cần lưu cho báo cáo.
 - Promtail root để đọc log và cAdvisor privileged là ngoại lệ hardening; không
   tuyên bố mọi dịch vụ đều non-root hoặc cách ly tuyệt đối.
 

@@ -19,7 +19,9 @@ router.get('/admin/comments',requireAuth,requireRole('ADMIN'),controller.list('m
 for(const op of ['moderate','delete'])router.post('/admin/comments/:id/'+op,requireAuth,requireRole('ADMIN'),requireVerified,parse,requireCsrf,controller.mutate(op));
 router.get('/notifications',requireAuth,controller.list('notifications'));
 router.post('/notifications/:id/read',requireAuth,parse,requireCsrf,controller.read);
+router.post('/notifications/:id/open',requireAuth,parse,requireCsrf,controller.open);
 router.get('/following',requireAuth,controller.follows);
 router.post('/following/:id',requireAuth,requireVerified,parse,requireCsrf,controller.follow);
 router.get('/admin/activity',requireAuth,requireRole('ADMIN'),controller.list('audit'));
 module.exports=router;
+

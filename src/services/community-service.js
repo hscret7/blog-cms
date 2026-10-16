@@ -42,18 +42,18 @@ async function thread(postId, rootId, query = {}) {
   return { success:true, root:roots[0], ...data };
 }
 function autoApproved(actor, post) { return actor.role === 'ADMIN' || (actor.role === 'AUTHOR' && actor.id === post.author_id); }
-async function notifyComment(c, actor, post, comment, parent = null) {
+async function notifyComment(c, actor, post, comment, parent = null, edited = false) {
   const path = '/comments/' + comment.id + '/go';
   const title = post.title || 'bài viết';
   if (comment.status === 'PENDING') {
     await c.execute(`INSERT INTO notifications(user_id,message,target_path,comment_id)
       SELECT id,?,?,? FROM users WHERE role='ADMIN' AND status='ACTIVE' AND id<>?`,
-      [('Có bình luận chờ duyệt trên bài “' + title + '”.').slice(0,300), path, comment.id, actor.id]);
+      [Array.from((edited ? 'Bình luận đã chỉnh sửa, cần duyệt lại trên bài “' : 'Có bình luận chờ duyệt trên bài “') + title + '”.').slice(0,300).join(''), path, comment.id, actor.id]);
     return;
   }
   const recipients = new Map();
-  if (post.author_id !== actor.id) recipients.set(post.author_id, 'Bài “' + title + '” có bình luận mới.');
-  if (parent && parent.user_id !== actor.id) recipients.set(parent.user_id, 'Có trả lời bình luận của bạn trên bài “' + title + '”.');
+  if (post.author_id !== actor.id) recipients.set(post.author_id, 'Bài “' + title + (edited ? '” có bình luận đã chỉnh sửa.' : '” có bình luận mới.'));
+  if (parent && parent.user_id !== actor.id) recipients.set(parent.user_id, (edited ? 'Câu trả lời cho bình luận của bạn đã chỉnh sửa trên bài “' : 'Có trả lời bình luận của bạn trên bài “') + title + '”.');
   for (const [id,message] of recipients) await activity.notify(c, id, message, path, comment.id);
 }
 function fToQuery(f) { return { ...f, page: String(f.page) }; }
@@ -93,43 +93,55 @@ async function mutate(actor, operation, idText, input = {}) {
       const comment = { id: result.insertId, status };
       await activity.record(c,current.id,parent ? 'COMMENT_REPLY' : 'COMMENT_CREATE','comment',comment.id);
       await notifyComment(c,current,post,comment,parent);
-      return { success:true, id:comment.id, message:status === 'APPROVED' ? 'Bình luận đã được hiển thị.' : 'Đã gửi bình luận, đang chờ duyệt.' };
+      return { success:true, id:comment.id, status, message:status === 'APPROVED' ? 'Bình luận đã được hiển thị.' : 'Đã gửi bình luận, đang chờ duyệt.' };
     }
     const [candidate] = await c.execute('SELECT post_id FROM comments WHERE id=?', [validation.id]);
     if (!candidate.length) return fail(404,'Không tìm thấy bình luận.');
     const [posts] = await c.execute('SELECT id,author_id,title,slug,status FROM posts WHERE id=? FOR UPDATE',[candidate[0].post_id]);
-    const [rows] = await c.execute('SELECT id,user_id,parent_id,status,is_deleted FROM comments WHERE id=? FOR UPDATE',[validation.id]);
+    const [rows] = await c.execute('SELECT id,user_id,parent_id,status,is_deleted,content FROM comments WHERE id=? FOR UPDATE',[validation.id]);
     const comment=rows[0], post=posts[0];
     if (!post || !comment || comment.is_deleted || (current.role !== 'ADMIN' && comment.user_id !== current.id)) return fail(404,'Không tìm thấy bình luận.');
     if (operation === 'edit') {
       if (comment.user_id !== current.id) return fail(403,'Chỉ người gửi được sửa nội dung bình luận.');
+      if (comment.content === input.content.trim()) return {success:true,message:'Nội dung không thay đổi.'};
       comment.status = autoApproved(current,post) ? 'APPROVED' : 'PENDING';
       await c.execute('UPDATE comments SET content=?,status=? WHERE id=?',[input.content.trim(),comment.status,comment.id]);
-      await notifyComment(c,current,post,comment);
+      if (comment.status === 'PENDING' || post.status === 'PUBLISHED') await notifyComment(c,current,post,comment,null,true);
     } else if (operation === 'delete') {
       const [counts] = await c.execute('SELECT COUNT(*) total FROM comments WHERE parent_id=?', [comment.id]);
       if (Number(counts[0].total) > 0) await c.execute("UPDATE comments SET content='',is_deleted=1 WHERE id=?", [comment.id]);
       else await c.execute('DELETE FROM comments WHERE id=?',[comment.id]);
     } else {
       if (current.role !== 'ADMIN' || !['APPROVED','HIDDEN'].includes(input.status)) return fail(403,'Bạn không có quyền kiểm duyệt.');
+      if (comment.status === input.status) return {success:true,message:'Bình luận đã ở trạng thái này.'};
+      let parent = null;
+      if (input.status === 'APPROVED') {
+        if (post.status !== 'PUBLISHED') return fail(409,'Bài viết đang ở dạng nháp. Chỉ duyệt hiển thị khi bài đã xuất bản.');
+        if (comment.parent_id) {
+          const [parents] = await c.execute('SELECT user_id,status,is_deleted FROM comments WHERE id=?', [comment.parent_id]);
+          parent = parents[0];
+          if (!parent || parent.status !== 'APPROVED' || parent.is_deleted) return fail(409,'Bình luận gốc không còn hiển thị. Chưa thể duyệt câu trả lời.');
+        }
+      }
       await c.execute('UPDATE comments SET status=? WHERE id=?',[input.status,comment.id]);
+      await c.execute("UPDATE notifications n JOIN users u ON u.id=n.user_id SET n.read_at=COALESCE(n.read_at,UTC_TIMESTAMP()) WHERE n.comment_id=? AND u.role='ADMIN'",[comment.id]);
       if (input.status === 'APPROVED' && comment.status !== 'APPROVED') {
         await activity.notify(c,comment.user_id,'Bình luận của bạn trên bài “' + post.title + '” đã được duyệt.','/comments/'+comment.id+'/go',comment.id);
-        let parent = null;
-        if (comment.parent_id) { const [parents] = await c.execute('SELECT user_id FROM comments WHERE id=?', [comment.parent_id]); parent = parents[0]; }
         await notifyComment(c,{id:comment.user_id},post,{...comment,status:'APPROVED'},parent);
+      } else if (input.status === 'HIDDEN' && comment.user_id !== current.id) {
+        await activity.notify(c,comment.user_id,'Bình luận của bạn trên bài “' + post.title + '” đã bị ẩn.','/my/comments?comment='+comment.id,comment.id);
       }
     }
     await activity.record(c,current.id,'COMMENT_'+operation.toUpperCase(),'comment',comment.id);
     return { success:true, message:'Đã cập nhật bình luận.' };
   });
 }
-async function commentDestination(idText, actor) {
+async function commentDestination(idText, actor, publicView = false) {
   if (!validatePostId(idText).isValid) return fail(400,'ID bình luận không hợp lệ.');
   const [rows] = await pool.execute(`SELECT c.id,c.user_id,c.parent_id,c.status,c.is_deleted,p.author_id,p.slug,p.status post_status,r.status root_status
     FROM comments c JOIN posts p ON p.id=c.post_id LEFT JOIN comments r ON r.id=c.parent_id WHERE c.id=?`, [Number(idText)]);
   const comment=rows[0]; if (!comment || comment.is_deleted) return fail(410,'Bình luận đã bị xóa hoặc không còn tồn tại.');
-  if (actor?.role === 'ADMIN') return { success:true, path:'/admin/comments?comment='+comment.id+'#comment-'+comment.id };
+  if (actor?.role === 'ADMIN' && !publicView) return { success:true, path:'/admin/comments?comment='+comment.id+'#comment-'+comment.id };
   const rootId=comment.parent_id || comment.id;
   if (comment.status === 'APPROVED' && comment.post_status === 'PUBLISHED' && (!comment.parent_id || comment.root_status === 'APPROVED')) {
     let page=1;
@@ -150,13 +162,25 @@ async function notifications(actor, query) {
     `SELECT COUNT(*) total FROM notifications n WHERE ${where}`,values,fToQuery(f),'n.id');
   for (const notice of data.rows) {
     notice.preview = null;
+    notice.commentState = null;
     if (notice.comment_id) {
-      const [rows]=await pool.execute(`SELECT c.content FROM comments c JOIN posts p ON p.id=c.post_id LEFT JOIN comments r ON r.id=c.parent_id WHERE c.id=? AND c.is_deleted=0
+      const [rows]=await pool.execute(`SELECT c.content,c.status,c.is_deleted,p.status post_status,r.status root_status FROM comments c JOIN posts p ON p.id=c.post_id LEFT JOIN comments r ON r.id=c.parent_id WHERE c.id=?
         AND (?='ADMIN' OR c.user_id=? OR (?='AUTHOR' AND p.author_id=?) OR (c.status='APPROVED' AND p.status='PUBLISHED' AND (c.parent_id IS NULL OR r.status='APPROVED')))`,[notice.comment_id,actor.role,actor.id,actor.role,actor.id]);
-      notice.preview=rows[0]?.content || null;
+      const current = rows[0];
+      notice.commentState = !current || current.is_deleted ? 'Không còn khả dụng' : current.status === 'PENDING' ? 'Đang chờ duyệt' : current.status === 'HIDDEN' ? 'Đã ẩn' : current.post_status !== 'PUBLISHED' || (current.root_status && current.root_status !== 'APPROVED') ? 'Chưa hiển thị công khai' : 'Đang hiển thị';
+      notice.preview=current && !current.is_deleted ? current.content : null;
     }
   }
   return data;
+}
+async function openNotification(actor, id) {
+  if (!validatePostId(id).isValid) return fail(400, 'ID thông báo không hợp lệ.');
+  const [rows] = await pool.execute('SELECT target_path FROM notifications WHERE id=? AND user_id=?', [Number(id), actor.id]);
+  if (!rows.length) return fail(404, 'Không tìm thấy thông báo.');
+  const path = require('../middlewares/ui-context').safePath(rows[0].target_path, null);
+  if (!path) return fail(400, 'Đường dẫn thông báo không hợp lệ.');
+  await pool.execute('UPDATE notifications SET read_at=COALESCE(read_at,UTC_TIMESTAMP()) WHERE id=? AND user_id=?', [Number(id), actor.id]);
+  return { success: true, path };
 }
 async function hideNotification(actor,id,hidden) {
   if (!validatePostId(id).isValid) return fail(400,'ID thông báo không hợp lệ.');
@@ -200,5 +224,5 @@ async function audit(query) {
   const [typeOptions] = await pool.execute('SELECT DISTINCT object_type FROM audit_events ORDER BY object_type');
   return { ...data, actorOptions, actionOptions, typeOptions };
 }
-module.exports={validContent,parseQuery,comments,thread,autoApproved,list,mutate,commentDestination,notifications,hideNotification,markRead,follows,follow,audit};
+module.exports={validContent,parseQuery,comments,thread,autoApproved,list,mutate,commentDestination,notifications,openNotification,hideNotification,markRead,follows,follow,audit};
 

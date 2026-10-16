@@ -34,6 +34,16 @@ test('Lọc thông báo đã ẩn giữ hidden=1 và có ô tìm kiếm', () => 
   assert.match(html, /id="q" name="q"/);
 });
 
+test('Thông báo mở bằng POST có CSRF; quản lý bình luận có liên kết công khai riêng', () => {
+  const notice = render('community/list.ejs', { mode: 'notifications', rows: [{ id: 11, comment_id: 7, message: 'Chờ duyệt', read_at: null, hidden_at: null, commentState: 'Đang hiển thị', preview: '<script>x</script>', created_at: new Date() }] });
+  assert.match(notice, /method="post" action="\/notifications\/11\/open"/);
+  assert.match(notice, /Trạng thái hiện tại/);
+  assert.ok(!notice.includes('<script>x</script>'));
+  const moderation = render('community/list.ejs', { mode: 'moderation', rows: [{ id: 7, title: 'Bài', slug: 'bai-thu', name: 'Reader', status: 'APPROVED', content: 'Thử', created_at: new Date() }] });
+  assert.match(moderation, /href="\/comments\/7\/go\?view=public"/);
+  assert.ok(!moderation.includes('href="/comments/7/go"'));
+});
+
 test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ qua', () => {
   const files = fs.readdirSync(views, { recursive: true }).filter(file => file.endsWith('.ejs') && !file.startsWith('partials/') && !file.endsWith('/form.ejs'));
   assert.equal(files.length, 28);

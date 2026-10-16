@@ -22,12 +22,14 @@ async function mutate(req,res,operation){
       return error(res,result);
     }
     setFeedback(req,result.message || 'Đã cập nhật bình luận.');
+    if(operation==='create' && result.id) return res.redirect(303,result.status==='APPROVED'?'/comments/'+result.id+'/go?view=public':'/my/comments?comment='+result.id+'#comment-'+result.id);
     return res.redirect(303,req.path.startsWith('/admin/')?'/admin/comments':'/my/comments');
   }catch(e){return error(res,e);}
 }
 module.exports={
   list:mode=>(req,res)=>list(req,res,mode),mutate:operation=>(req,res)=>mutate(req,res,operation),
-  async destination(req,res){try{const r=await service.commentDestination(req.params.id,req.user);if(!r.success)return error(res,r);res.redirect(303,r.path);}catch(e){error(res,e);}},
+  async destination(req,res){try{res.set('Cache-Control','no-store');const r=await service.commentDestination(req.params.id,req.user,req.query.view==='public');if(!r.success)return error(res,r);res.redirect(303,r.path);}catch(e){error(res,e);}},
+  async open(req,res){try{res.set('Cache-Control','no-store');const r=await service.openNotification(req.user,req.params.id);if(!r.success)return error(res,r);res.redirect(303,r.path);}catch(e){error(res,e);}},
   visibility:hidden=>async(req,res)=>{try{const r=await service.hideNotification(req.user,req.params.id,hidden);if(!r.success)return error(res,r);setFeedback(req,r.message);res.redirect(303,'/notifications'+(hidden?'':'?hidden=1'));}catch(e){error(res,e);}},
   async thread(req,res){try{
     res.set('Cache-Control','no-store');
@@ -40,3 +42,4 @@ module.exports={
   async follows(req,res){try{res.render('community/follows',{categories:await service.follows(req.user),csrfToken:getCsrfToken(req)});}catch(e){error(res,e);}},
   async follow(req,res){try{const r=await service.follow(req.user,req.params.id,req.body?.enabled==='1');if(!r.success)return error(res,r);setFeedback(req,'Đã cập nhật chủ đề theo dõi.');res.redirect(303,'/following');}catch(e){error(res,e);}}
 };
+

@@ -1,5 +1,11 @@
 # Rà soát dự án trước báo cáo — 16/10/2026
 
+Đợt bổ sung về thông báo/bình luận sau phản hồi của sinh viên: xem
+[thong-bao-binh-luan.md](thong-bao-binh-luan.md). Bộ test mới nhất là
+**146 Node + 8 Python**, không phải các số lịch sử ở bảng rà soát ban đầu dưới đây.
+README đã được sửa những mô tả lỗi thời; phần chưa kiểm chứng hoặc chưa triển khai
+thực sự vẫn được giữ. Đây là tài liệu rà soát, chưa phải báo cáo nộp môn.
+
 ## Phạm vi và kết luận
 
 Snapshot đầu vào: `ac7b89fff655d2bb086b7e68f58fe321566e4ceb`, nhánh
