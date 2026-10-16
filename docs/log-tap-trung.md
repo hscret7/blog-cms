@@ -78,12 +78,17 @@ trước; script sẽ dừng khi thiếu hoặc gặp log driver/path không đ�
     --entrypoint /usr/bin/promtail promtail \
     -config.file=/etc/promtail/promtail.yml -check-syntax
 
-  docker compose run --rm --no-deps \
-    --entrypoint nginx nginx -t
+  docker run --rm --network none \
+    --mount "type=bind,src=$PWD/infra/nginx/default.conf,dst=/etc/nginx/conf.d/default.conf,readonly" \
+    nginx:stable-alpine nginx -t
 )
 ```
 
 Mong đợi: Loki config valid, Promtail syntax valid, Nginx test successful.
+Kiểm tra Nginx dùng container độc lập với `--network none`, không dùng
+`docker compose run nginx`: service này có IP cố định 172.26.0.10 nên một
+container Compose tạm có thể trùng IP với Nginx đang chạy. Không dừng hoặc
+xóa network/database để xử lý lỗi kiểm tra này.
 Loki image là distroless, không có shell/wget: healthcheck dùng `/usr/bin/loki
 -health`. Không thay bằng CMD-SHELL/wget cho image này.
 
