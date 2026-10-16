@@ -28,16 +28,20 @@ async function comments(postId, query) {
     `SELECT COUNT(*) total FROM comments c JOIN posts p ON p.id=c.post_id WHERE ${where}`, [postId], fToQuery(f));
   for (const root of data.rows) {
     const [counts] = await pool.execute("SELECT COUNT(*) total FROM comments WHERE parent_id=? AND status='APPROVED' AND is_deleted=0", [root.id]);
-    const [replies] = await pool.execute("SELECT c.id,c.content,c.created_at,u.name FROM comments c JOIN users u ON u.id=c.user_id WHERE c.parent_id=? AND c.status='APPROVED' AND c.is_deleted=0 ORDER BY c.id ASC LIMIT 5", [root.id]);
+    const [replies] = await pool.execute(replySelect() + " WHERE c.parent_id=? AND c.status='APPROVED' AND c.is_deleted=0 ORDER BY c.id ASC LIMIT 5", [root.id]);
     root.replies = replies; root.reply_count = Number(counts[0].total);
   }
   return data;
+}
+function replySelect() {
+  // Never expose the name/content of a target that is hidden or deleted.
+  return "SELECT c.id,c.parent_id,c.reply_to_id,c.content,c.created_at,u.name,CASE WHEN target.status='APPROVED' AND target.is_deleted=0 THEN recipient.name ELSE NULL END reply_to_name FROM comments c JOIN users u ON u.id=c.user_id LEFT JOIN comments target ON target.id=c.reply_to_id LEFT JOIN users recipient ON recipient.id=target.user_id";
 }
 async function thread(postId, rootId, query = {}) {
   if (!validatePostId(String(rootId)).isValid) return fail(400, 'ID bình luận không hợp lệ.');
   const [roots] = await pool.execute("SELECT c.id,c.content,c.created_at,c.is_deleted,u.name,p.slug FROM comments c JOIN users u ON u.id=c.user_id JOIN posts p ON p.id=c.post_id WHERE c.id=? AND c.post_id=? AND c.parent_id IS NULL AND c.status='APPROVED' AND p.status='PUBLISHED'", [Number(rootId), postId]);
   if (!roots.length) return fail(404, 'Cuộc trao đổi không còn hiển thị công khai.');
-  const data = await pageRows("SELECT c.id,c.content,c.created_at,u.name FROM comments c JOIN users u ON u.id=c.user_id WHERE c.parent_id=? AND c.status='APPROVED' AND c.is_deleted=0",
+  const data = await pageRows(replySelect() + " WHERE c.parent_id=? AND c.status='APPROVED' AND c.is_deleted=0",
     "SELECT COUNT(*) total FROM comments WHERE parent_id=? AND status='APPROVED' AND is_deleted=0", [Number(rootId)], { ...query, sort: 'oldest' });
   return { success:true, root:roots[0], ...data };
 }
@@ -85,11 +89,15 @@ async function mutate(actor, operation, idText, input = {}) {
       let parent = null;
       if (input.parent_id !== undefined && input.parent_id !== '') {
         if (!validatePostId(input.parent_id).isValid) return fail(400, 'Bình luận gốc không hợp lệ.');
-        const [parents] = await c.execute("SELECT id,user_id FROM comments WHERE id=? AND post_id=? AND parent_id IS NULL AND status='APPROVED' AND is_deleted=0 FOR UPDATE", [Number(input.parent_id),post.id]);
+        const [parents] = await c.execute("SELECT id,user_id,parent_id FROM comments WHERE id=? AND post_id=? AND status='APPROVED' AND is_deleted=0 FOR UPDATE", [Number(input.parent_id),post.id]);
         parent = parents[0]; if (!parent) return fail(404, 'Bình luận gốc không còn cho phép trả lời.');
+        if (parent.parent_id) {
+          const [roots] = await c.execute("SELECT id FROM comments WHERE id=? AND post_id=? AND parent_id IS NULL AND status='APPROVED' AND is_deleted=0 FOR UPDATE", [parent.parent_id, post.id]);
+          if (!roots.length) return fail(404, 'Cuộc trao đổi không còn cho phép trả lời.');
+        }
       }
       const status = autoApproved(current,post) ? 'APPROVED' : 'PENDING';
-      const [result] = await c.execute('INSERT INTO comments(post_id,user_id,parent_id,content,status) VALUES (?,?,?,?,?)', [post.id,current.id,parent?.id || null,input.content.trim(),status]);
+      const [result] = await c.execute('INSERT INTO comments(post_id,user_id,parent_id,reply_to_id,content,status) VALUES (?,?,?,?,?,?)', [post.id,current.id,parent ? (parent.parent_id || parent.id) : null,parent?.id || null,input.content.trim(),status]);
       const comment = { id: result.insertId, status };
       await activity.record(c,current.id,parent ? 'COMMENT_REPLY' : 'COMMENT_CREATE','comment',comment.id);
       await notifyComment(c,current,post,comment,parent);
@@ -98,7 +106,7 @@ async function mutate(actor, operation, idText, input = {}) {
     const [candidate] = await c.execute('SELECT post_id FROM comments WHERE id=?', [validation.id]);
     if (!candidate.length) return fail(404,'Không tìm thấy bình luận.');
     const [posts] = await c.execute('SELECT id,author_id,title,slug,status FROM posts WHERE id=? FOR UPDATE',[candidate[0].post_id]);
-    const [rows] = await c.execute('SELECT id,user_id,parent_id,status,is_deleted,content FROM comments WHERE id=? FOR UPDATE',[validation.id]);
+    const [rows] = await c.execute('SELECT id,user_id,parent_id,status,is_deleted,content,reply_to_id FROM comments WHERE id=? FOR UPDATE',[validation.id]);
     const comment=rows[0], post=posts[0];
     if (!post || !comment || comment.is_deleted || (current.role !== 'ADMIN' && comment.user_id !== current.id)) return fail(404,'Không tìm thấy bình luận.');
     if (operation === 'edit') {
@@ -106,9 +114,14 @@ async function mutate(actor, operation, idText, input = {}) {
       if (comment.content === input.content.trim()) return {success:true,message:'Nội dung không thay đổi.'};
       comment.status = autoApproved(current,post) ? 'APPROVED' : 'PENDING';
       await c.execute('UPDATE comments SET content=?,status=? WHERE id=?',[input.content.trim(),comment.status,comment.id]);
-      if (comment.status === 'PENDING' || post.status === 'PUBLISHED') await notifyComment(c,current,post,comment,null,true);
+      let recipient = null;
+      if (comment.reply_to_id) {
+        const [targets] = await c.execute("SELECT user_id FROM comments WHERE id=? AND post_id=? AND status='APPROVED' AND is_deleted=0", [comment.reply_to_id,post.id]);
+        recipient = targets[0] || null;
+      }
+      if (comment.status === 'PENDING' || post.status === 'PUBLISHED') await notifyComment(c,current,post,comment,recipient,true);
     } else if (operation === 'delete') {
-      const [counts] = await c.execute('SELECT COUNT(*) total FROM comments WHERE parent_id=?', [comment.id]);
+      const [counts] = await c.execute('SELECT COUNT(*) total FROM comments WHERE parent_id=? OR reply_to_id=?', [comment.id,comment.id]);
       if (Number(counts[0].total) > 0) await c.execute("UPDATE comments SET content='',is_deleted=1 WHERE id=?", [comment.id]);
       else await c.execute('DELETE FROM comments WHERE id=?',[comment.id]);
     } else {
@@ -127,7 +140,12 @@ async function mutate(actor, operation, idText, input = {}) {
       await c.execute("UPDATE notifications n JOIN users u ON u.id=n.user_id SET n.read_at=COALESCE(n.read_at,UTC_TIMESTAMP()) WHERE n.comment_id=? AND u.role='ADMIN'",[comment.id]);
       if (input.status === 'APPROVED' && comment.status !== 'APPROVED') {
         await activity.notify(c,comment.user_id,'Bình luận của bạn trên bài “' + post.title + '” đã được duyệt.','/comments/'+comment.id+'/go',comment.id);
-        await notifyComment(c,{id:comment.user_id},post,{...comment,status:'APPROVED'},parent);
+        let recipient = parent;
+        if (comment.reply_to_id) {
+          const [targets] = await c.execute("SELECT user_id FROM comments WHERE id=? AND post_id=? AND status='APPROVED' AND is_deleted=0", [comment.reply_to_id,post.id]);
+          recipient = targets[0] || null;
+        }
+        await notifyComment(c,{id:comment.user_id},post,{...comment,status:'APPROVED'},recipient);
       } else if (input.status === 'HIDDEN' && comment.user_id !== current.id) {
         await activity.notify(c,comment.user_id,'Bình luận của bạn trên bài “' + post.title + '” đã bị ẩn.','/my/comments?comment='+comment.id,comment.id);
       }

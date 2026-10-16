@@ -1,5 +1,5 @@
 > Bản đang phát triển nằm trên nhánh `codex/cms-ui-navigation`; PR #1 chưa merge `main`.
-> Database hiện tại của sinh viên đã áp dụng 001–005: **không chạy lại migration khi cập nhật các bản sửa thông báo/phiên**.
+> Bản trả lời tiếp vào mọi câu trả lời cần **migration 006 đúng một lần**, sau khi sao lưu và dừng app. Database hiện tại đã có 001–005: không chạy lại các migration đó. Xem [hướng dẫn cập nhật trả lời](docs/tra-loi-tiep.md).
 > Quy tắc bình luận và thông báo hiện tại: [docs/thong-bao-binh-luan.md](docs/thong-bao-binh-luan.md).
 
 # Hệ thống Blog CMS
@@ -183,7 +183,7 @@ Chạy toàn bộ các bộ kiểm thử từ thư mục gốc dự án:
 node --test tests/*.test.js
 ```
 
-Kết quả kiểm tra mã hiện tại (16/10/2026): **146 test Node đạt, 0 thất bại**; thêm **8 test Python** bằng `python3 tests/log-targets.test.py`. Các ca database dùng fixture, không thay thế nghiệm thu MySQL thật.
+Kết quả kiểm tra mã hiện tại (16/10/2026): **153 test Node đạt, 0 thất bại**; thêm **8 test Python** bằng `python3 tests/log-targets.test.py`. Các ca database dùng fixture, không thay thế nghiệm thu MySQL thật.
 
 Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
 xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
@@ -508,7 +508,7 @@ chưa có các bảng này:
 docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' < db/migrations/001_create_core_tables.sql
 ```
 
-Với cài mới, phải chạy lần lượt **001 → 002 → 003 → 004 → 005**, rồi mới chạy app/scripts tạo tài khoản. Xem [hướng dẫn cài mới](docs/cai-moi.md). Với database đang có, không chạy lại migration đã áp dụng; các hướng dẫn cập nhật mô tả từng mốc riêng.
+Với cài mới, phải chạy lần lượt **001 → 002 → 003 → 004 → 005 → 006**, rồi mới chạy app/scripts tạo tài khoản. Xem [hướng dẫn cài mới](docs/cai-moi.md). Với database đang có, không chạy lại migration đã áp dụng; các hướng dẫn cập nhật mô tả từng mốc riêng.
 
 Kiểm tra danh sách bảng:
 
@@ -790,7 +790,7 @@ Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 - Đăng ký READER, xác minh email, quên/đặt lại mật khẩu bằng liên kết một lần.
 - Hồ sơ sửa tên/email; đổi email yêu cầu mật khẩu và xác minh lại.
 - Đổi/reset mật khẩu tăng session_version để vô hiệu hóa phiên cũ.
-- Trả lời một cấp; độc giả và AUTHOR trên bài người khác gửi/sửa thành PENDING. ADMIN và AUTHOR trên bài của mình được hiển thị ngay; nội dung không đổi không gửi lại thông báo.
+- Có thể trả lời bình luận hoặc bất kỳ câu trả lời nào; mỗi câu lưu đích trả lời và gom trong cùng cuộc trao đổi. Độc giả và AUTHOR trên bài người khác gửi/sửa thành PENDING. ADMIN và AUTHOR trên bài của mình được hiển thị ngay; nội dung không đổi không gửi lại thông báo.
 - ADMIN duyệt/ẩn/xóa; công khai chỉ APPROVED trên bài PUBLISHED, phân trang 10 bình luận gốc hoặc 10 câu trả lời/trang.
 - Thông báo phân biệt sự kiện đã xảy ra và trạng thái bình luận hiện tại; mở qua nút có CSRF để đánh dấu đã đọc; việc duyệt cập nhật đã đọc cho các thông báo kiểm duyệt liên quan.
 - Theo dõi danh mục, nhận thông báo trong website; đánh dấu đã đọc/tất cả.
@@ -798,8 +798,8 @@ Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 - Nhật ký ADMIN; lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
 - Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
 
-Bộ test hiện tại: 146 Node + 8 Python đạt; npm audit tại đợt rà soát 16/10 báo 0 lỗ hổng.
-Database migrations 003–005 đã được sinh viên cung cấp kết quả chạy thành công; Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật và các bản sửa nghiệp vụ thông báo hiện tại vẫn cần nghiệm thu riêng.
+Bộ test hiện tại: 153 Node + 8 Python đạt; npm audit tại đợt rà soát 16/10 báo 0 lỗ hổng.
+Database migrations 003–005 đã được sinh viên cung cấp kết quả chạy thành công; Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật vẫn cần nghiệm thu riêng. Bản trả lời tiếp cần chạy 006 và kiểm tra trên MySQL/giao diện thật; không suy ra chỉ từ test fixture.
 Kết quả Chromium với fixture ở mốc giao diện trước đây không thay thế kiểm tra UI bản sửa hiện tại hoặc CRUD trên MySQL thật.
 Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md).
 

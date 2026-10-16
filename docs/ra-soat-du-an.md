@@ -2,9 +2,9 @@
 
 Đợt bổ sung về thông báo/bình luận sau phản hồi của sinh viên: xem
 [thong-bao-binh-luan.md](thong-bao-binh-luan.md). Bộ test mới nhất là
-**146 Node + 8 Python**, không phải các số lịch sử ở bảng rà soát ban đầu dưới đây.
+**153 Node + 8 Python**, không phải các số lịch sử ở bảng rà soát ban đầu dưới đây.
 README đã được sửa những mô tả lỗi thời; phần chưa kiểm chứng hoặc chưa triển khai
-thực sự vẫn được giữ. Đây là tài liệu rà soát, chưa phải báo cáo nộp môn.
+thực sự vẫn được giữ. Đây là tài liệu rà soát, chưa phải báo cáo nộp môn. Bản bổ sung trả lời tiếp cần migration 006; xem `tra-loi-tiep.md`. Các phát biểu không đổi schema trong đợt rà soát ban đầu chỉ áp dụng cho đợt đó.
 
 ## Phạm vi và kết luận
 

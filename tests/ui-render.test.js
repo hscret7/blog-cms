@@ -28,6 +28,20 @@ function render(file, extra = {}) {
   return ejs.render(fs.readFileSync(path.join(views, file), 'utf8'), { ...fixture, ...extra }, { filename: path.join(views, file) });
 }
 
+test('Mỗi câu trả lời có nút trả lời đúng đích, tên người nhận được escape', () => {
+  const reply={id:8,parent_id:7,reply_to_id:7,reply_to_name:'Tên <script>x</script>',name:'Người B',content:'Câu B',created_at:new Date()};
+  const root={id:7,name:'Người A',content:'Gốc',is_deleted:0,replies:[reply],reply_count:1};
+  const detail=render('public/detail.ejs',{post:{...post,status:'PUBLISHED'},commentPage:{total:1,rows:[root],filters:{page:1,sort:'newest'},totalPages:1}});
+  assert.match(detail,/name="parent_id" value="8"/);
+  assert.match(detail,/Trả lời Người B/);
+  assert.match(detail,/Đang trả lời/);
+  assert.ok(!detail.includes('<script>x</script>'));
+  const thread=render('community/thread.ejs',{root:{...root,replies:[]},rows:[reply]});
+  assert.match(thread,/name="parent_id" value="8"/);
+  const guest=render('community/thread.ejs',{currentUser:null,root:{...root,replies:[]},rows:[reply]});
+  assert.ok(!guest.includes('name="parent_id"'));
+});
+
 test('Lọc thông báo đã ẩn giữ hidden=1 và có ô tìm kiếm', () => {
   const html = render('community/list.ejs', { mode: 'notifications', rows: [], query: { hidden: '1' } });
   assert.match(html, /name="hidden" value="1"/);

@@ -3,7 +3,7 @@ function fixture({actor={id:4,role:'READER',email_verified_at:new Date()},parent
  const calls=[];const c={async execute(sql,values=[]){calls.push({sql,values});
  if(sql.startsWith('SELECT post_id'))return[[{post_id:2}]];
  if(sql.includes('FROM posts')&&sql.includes('FOR UPDATE'))return[[{id:2,author_id:4,title:'Bài thử',slug:'bai-thu',status:'PUBLISHED'}]];
- if(sql.startsWith('SELECT id,user_id FROM comments'))return[[...(parent?[{id:7,user_id:5}]:[])]];
+ if(sql.startsWith('SELECT id,user_id,parent_id FROM comments'))return[[...(parent?[{id:7,user_id:5,parent_id:null}]:[])]];
  if(sql.includes('FROM comments WHERE id=? FOR UPDATE'))return[[{id:7,user_id:actor.id,parent_id:null,status:'APPROVED',is_deleted:0,...comment}]];
  if(sql.startsWith('SELECT COUNT'))return[[{total:children}]];
  if(sql.startsWith('SELECT c.id,c.user_id,c.parent_id'))return[[...(destination?[destination]:[])]];
@@ -16,8 +16,9 @@ test('ADMIN và AUTHOR trên bài của mình được duyệt ngay; AUTHOR khá
  const f=fixture({actor:{...actor,email_verified_at:new Date()}});await f.service.mutate(f.actor,'create','2',{content:'Thử'});assert.equal(f.calls.find(c=>c.sql?.startsWith('INSERT INTO comments')).values.at(-1),expected);
  }
 });
-test('Trả lời chỉ vào bình luận gốc đã duyệt cùng bài; không tạo tầng thứ hai',async()=>{
- const f=fixture();assert.equal((await f.service.mutate(f.actor,'create','2',{content:'Trả lời',parent_id:'7'})).success,true);const parent=f.calls.find(c=>c.sql?.startsWith('SELECT id,user_id FROM comments'));assert.match(parent.sql,/parent_id IS NULL/);assert.match(parent.sql,/post_id=\?/);assert.equal(parent.values[1],2);
+test('Trả lời bình luận đã duyệt cùng bài; giữ đúng gốc và đích trả lời',async()=>{
+ const f=fixture();assert.equal((await f.service.mutate(f.actor,'create','2',{content:'Trả lời',parent_id:'7'})).success,true);const parent=f.calls.find(c=>c.sql?.startsWith('SELECT id,user_id,parent_id FROM comments'));assert.match(parent.sql,/post_id=\?/);assert.equal(parent.values[1],2);
+ const insert=f.calls.find(c=>c.sql?.startsWith('INSERT INTO comments'));assert.equal(insert.values[2],7);assert.equal(insert.values[3],7);
  const hidden=fixture({parent:false});assert.equal((await hidden.service.mutate(hidden.actor,'create','2',{content:'Trả lời',parent_id:'7'})).status,404);assert.ok(!hidden.calls.some(c=>c.sql?.startsWith('INSERT INTO comments')));
 });
 test('Xóa bình luận gốc có trả lời giữ tombstone, không xóa cuộc trao đổi',async()=>{
@@ -38,3 +39,4 @@ test('Bình luận đã xóa trả thông báo rõ; ADMIN mở đúng mục ki�
  const deleted=fixture({destination:{id:7,is_deleted:1}});assert.equal((await deleted.service.commentDestination('7',null)).status,410);
  const pending=fixture({destination:{id:7,is_deleted:0,status:'PENDING'}});assert.equal((await pending.service.commentDestination('7',{id:3,role:'ADMIN'})).path,'/admin/comments?comment=7#comment-7');
 });
+

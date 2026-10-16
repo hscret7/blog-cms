@@ -1,0 +1,11 @@
+<section class="reply-card" id="comment-<%= reply.id %>">
+  <strong><%= reply.name %></strong>
+  <% if(reply.reply_to_name) { %>
+    <p class="reply-target">Đang trả lời <a href="/comments/<%= reply.reply_to_id %>/go?view=public"><%= reply.reply_to_name %></a></p>
+  <% } else if(reply.reply_to_id || reply.parent_id) { %>
+    <p class="reply-target">Đang trả lời một bình luận không còn hiển thị.</p>
+  <% } %>
+  <p class="post-content"><%= reply.content %></p>
+  <% if(reply.created_at) { %><small><%= new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(reply.created_at) %></small><% } %>
+  <%- include('reply-form',{target:reply}) %>
+</section>

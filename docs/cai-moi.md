@@ -1,7 +1,7 @@
 # Cài mới trên Ubuntu/WSL
 
 Chỉ dùng với checkout mới và database chưa có bảng. Máy đang chạy dự án của Minh Huệ
-đã áp dụng 001–005: **không chạy lại phần khởi tạo này**.
+đã áp dụng 001–005: **không chạy lại phần khởi tạo này**. Để nâng cấp tính năng trả lời tiếp, chỉ chạy 006 theo `tra-loi-tiep.md`.
 Không dùng `docker compose down -v` để cập nhật.
 
 Yêu cầu: Docker Engine rootful, Compose v2, Python 3, Node 24 (nvm), Git.
@@ -52,7 +52,7 @@ Client ID thật. Cách cấu hình nằm trong `cap-nhat-cong-dong.md` và
 ```bash
 (
   set -e
-  for file in db/migrations/00{1,2,3,4,5}_*.sql; do
+  for file in db/migrations/00{1,2,3,4,5,6}_*.sql; do
     docker compose exec -T mysql sh -c '
       MYSQL_PWD="$MYSQL_PASSWORD" exec mysql \
         --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" \

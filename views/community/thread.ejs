@@ -2,6 +2,7 @@
 <h1>Cuộc trao đổi</h1><p><a href="/posts/<%= post.slug %>"><%= post.title %></a></p>
 <%- include('../partials/comment',{comment:root}) %>
 <h2>Câu trả lời (<%= total %>)</h2>
-<% for(const reply of rows) { %><section class="comment-card" id="comment-<%= reply.id %>"><strong><%= reply.name %></strong><p class="post-content"><%= reply.content %></p><small><%= new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(reply.created_at) %></small></section><% } %>
+<% for(const reply of rows) { %><%- include('../partials/reply',{reply,allowReplies:!root.is_deleted}) %><% } %>
 <nav class="pagination" aria-label="Phân trang câu trả lời"><% if(filters.page>1) { %><a href="?page=<%= filters.page-1 %>">Trang trước</a><% } %><p>Trang <%= filters.page %> / <%= totalPages %></p><% if(filters.page<totalPages) { %><a href="?page=<%= filters.page+1 %>">Trang sau</a><% } %></nav>
 </main><%- include('../partials/footer') %></body></html>
+

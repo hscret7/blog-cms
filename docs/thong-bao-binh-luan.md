@@ -1,7 +1,7 @@
 # Quy tắc bình luận và thông báo — bản sửa 16/10/2026
 
 Đây là tài liệu nghiệp vụ/kiểm tra, không phải báo cáo nộp môn.
-Bản sửa không đổi schema, không chạy lại migration và không xóa thông báo lịch sử.
+Đợt sửa luồng thông báo không đổi schema; bản bổ sung trả lời tiếp sau đó cần migration 006 theo [tra-loi-tiep.md](tra-loi-tiep.md). Không chạy lại 001–005 hoặc xóa thông báo lịch sử.
 
 ## Luồng người dùng
 
@@ -16,8 +16,7 @@ Bản sửa không đổi schema, không chạy lại migration và không xóa 
 | Sửa thực sự | Áp dụng lại quy tắc vai trò/quyền trên bài; thông báo nói rõ chỉnh sửa thay vì gọi là bình luận mới |
 | Bài đang nháp / bình luận gốc ẩn hoặc xóa | Không cho duyệt hiển thị câu trả lời rồi báo công khai sai thực tế |
 
-Người dùng vẫn cần xác minh email. Trả lời chỉ một cấp, vào bình luận gốc cùng bài
-đã được duyệt và chưa xóa. Không gửi thông báo cho chính người tạo nội dung.
+Người dùng vẫn cần xác minh email. Có thể trả lời mọi câu trả lời đã duyệt, chưa xóa, cùng bài; gốc cuộc trao đổi cũng phải còn được duyệt và chưa xóa. Nhóm hiển thị phẳng trong cùng cuộc trao đổi, mỗi câu ghi rõ người được trả lời. Không gửi thông báo cho chính người tạo nội dung.
 Người được duyệt có thể nhận thông báo kết quả duyệt của chính bình luận mình.
 
 Thông báo là sự kiện tại thời điểm phát sinh; nội dung xem trước là phiên bản
@@ -42,7 +41,7 @@ hoặc gộp các thông báo trùng đã được tạo trước đây.
 
 ## Kiểm chứng
 
-`npm test`: 146 test đạt (gồm 8 ca notification workflow mới và 1 ca render).
+`npm test`: 153 test đạt (gồm các ca notification workflow, trả lời tiếp và render).
 Các test mới kiểm tra chống vòng điều hướng ADMIN; quyền mở thông báo/CSRF/đích
 nội bộ; kết thúc thông báo chờ duyệt; bấm duyệt lặp; bài nháp/gốc bị ẩn/xóa;
 ẩn thông báo kết quả; nội dung không đổi; hiển thị trạng thái hiện tại.
