@@ -69,7 +69,8 @@ async function withAdminTransaction(actor, action) {
     if (
       !currentActor ||
       currentActor.role !== 'ADMIN' ||
-      currentActor.status !== 'ACTIVE'
+      currentActor.status !== 'ACTIVE' ||
+      (currentActor.session_version ?? 0) !== (actor.session_version ?? 0)
     ) {
       await connection.rollback();
       transactionStarted = false;

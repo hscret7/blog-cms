@@ -24,8 +24,9 @@ async function withActor(actor, allowedRoles, action) {
   const c = await pool.getConnection();
   try {
     await c.beginTransaction();
-    const [rows] = await c.execute('SELECT id,role,status,email_verified_at FROM users WHERE id=? FOR UPDATE', [actor?.id || 0]);
-    if (!rows[0] || rows[0].status !== 'ACTIVE' || !allowedRoles.includes(rows[0].role)) {
+    const [rows] = await c.execute('SELECT id,role,status,email_verified_at,session_version FROM users WHERE id=? FOR UPDATE', [actor?.id || 0]);
+    if (!rows[0] || rows[0].status !== 'ACTIVE' || !allowedRoles.includes(rows[0].role) ||
+        (actor?.session_version ?? 0) !== (rows[0].session_version ?? 0)) {
       const e = new Error('Bạn không còn quyền thực hiện thao tác.'); e.status = 403; throw e;
     }
     const result = await action(c, rows[0]);
@@ -35,3 +36,4 @@ async function withActor(actor, allowedRoles, action) {
   finally { c.release(); }
 }
 module.exports = { record, notify, published, snapshot, withActor };
+

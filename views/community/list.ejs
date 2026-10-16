@@ -2,7 +2,8 @@
 <main id="main-content">
 <h1><%= mode === 'notifications' ? 'Thông báo của bạn' : mode === 'audit' ? 'Nhật ký hoạt động' : mode === 'moderation' ? 'Quản lý bình luận' : mode === 'authored' ? 'Bình luận trên bài của tôi' : 'Bình luận của tôi' %></h1>
 <form class="filter-bar" method="get">
-  <% if(mode !== 'notifications') { %><p><label for="q">Tìm kiếm</label><input id="q" name="q" value="<%= filters.q %>"></p><% } %>
+  <p><label for="q">Tìm kiếm</label><input id="q" name="q" value="<%= filters.q %>"></p>
+  <% if(mode==='notifications' && query.hidden==='1') { %><input type="hidden" name="hidden" value="1"><% } %>
   <% if(['mine','moderation','authored'].includes(mode)) { %><p><label for="status">Trạng thái</label><select id="status" name="status"><option value="">Tất cả</option><% for(const [key,label] of [['PENDING','Chờ duyệt'],['APPROVED','Đã duyệt'],['HIDDEN','Đã ẩn']]) { %><option value="<%= key %>" <%= filters.status===key?'selected':'' %>><%= label %></option><% } %></select></p><% } %>
   <% if(mode==='notifications') { %><p><label for="unread">Lọc thông báo</label><select id="unread" name="unread"><option value="">Tất cả</option><option value="1" <%= query.unread==='1'?'selected':'' %>>Chưa đọc</option></select></p><% } %>
   <p><label for="sort">Thứ tự</label><select id="sort" name="sort"><option value="newest" <%= filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select></p><button>Lọc</button>
@@ -37,3 +38,4 @@
 <% }); %>
 <nav class="pagination" aria-label="Phân trang"><% if(previousUrl) { %><a href="<%= previousUrl %>">← Trang trước</a><% } %><p>Trang <%= filters.page %> / <%= totalPages %></p><% if(nextUrl) { %><a href="<%= nextUrl %>">Trang sau →</a><% } %></nav>
 </main><%- include('../partials/footer') %></body></html>
+

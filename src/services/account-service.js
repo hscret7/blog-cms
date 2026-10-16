@@ -129,8 +129,8 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
     let result;
     try {
       result = await transaction(async c => {
-        const [current] = await c.execute("SELECT email,password_hash FROM users WHERE id = ? AND status = 'ACTIVE' FOR UPDATE", [actor.id]);
-        if (!current[0] || current[0].email !== users[0].email || current[0].password_hash !== users[0].password_hash) return fail(409, 'Tài khoản đã thay đổi. Vui lòng tải lại trang.');
+        const [current] = await c.execute("SELECT email,password_hash,session_version FROM users WHERE id = ? AND status = 'ACTIVE' FOR UPDATE", [actor.id]);
+        if (!current[0] || (current[0].session_version ?? 0) !== (actor.session_version ?? 0) || current[0].email !== users[0].email || current[0].password_hash !== users[0].password_hash) return fail(409, 'Tài khoản đã thay đổi. Vui lòng tải lại trang.');
         await c.execute('UPDATE users SET name = ? WHERE id = ?', [v.data.name, actor.id]);
         let raw;
         if (emailChanged) {
@@ -158,8 +158,8 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
     if (!rows[0] || !await verifyPassword(rows[0].password_hash, input.current_password)) return fail(422, 'Mật khẩu hiện tại không đúng.');
     const hash = await hashPassword(input.password);
     return transaction(async c => {
-      const [current] = await c.execute("SELECT password_hash FROM users WHERE id = ? AND status = 'ACTIVE' FOR UPDATE", [actor.id]);
-      if (!current[0] || current[0].password_hash !== rows[0].password_hash) return fail(409, 'Tài khoản đã thay đổi. Vui lòng đăng nhập lại.');
+      const [current] = await c.execute("SELECT password_hash,session_version FROM users WHERE id = ? AND status = 'ACTIVE' FOR UPDATE", [actor.id]);
+      if (!current[0] || (current[0].session_version ?? 0) !== (actor.session_version ?? 0) || current[0].password_hash !== rows[0].password_hash) return fail(409, 'Tài khoản đã thay đổi. Vui lòng đăng nhập lại.');
       await c.execute('UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [hash, actor.id]);
       await c.execute("UPDATE account_tokens SET used_at = UTC_TIMESTAMP() WHERE user_id = ? AND purpose = 'RESET_PASSWORD' AND used_at IS NULL", [actor.id]);
       await audit(c, actor.id, 'PASSWORD_CHANGE');
@@ -169,3 +169,4 @@ function createAccountService({ db = pool, mail = mailService, hashPassword = pa
   return { register, requestReset, resend, consume, updateProfile, changePassword };
 }
 module.exports = { createAccountService, tokenHash, ...createAccountService() };
+

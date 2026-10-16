@@ -28,6 +28,12 @@ function render(file, extra = {}) {
   return ejs.render(fs.readFileSync(path.join(views, file), 'utf8'), { ...fixture, ...extra }, { filename: path.join(views, file) });
 }
 
+test('Lọc thông báo đã ẩn giữ hidden=1 và có ô tìm kiếm', () => {
+  const html = render('community/list.ejs', { mode: 'notifications', rows: [], query: { hidden: '1' } });
+  assert.match(html, /name="hidden" value="1"/);
+  assert.match(html, /id="q" name="q"/);
+});
+
 test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ qua', () => {
   const files = fs.readdirSync(views, { recursive: true }).filter(file => file.endsWith('.ejs') && !file.startsWith('partials/') && !file.endsWith('/form.ejs'));
   assert.equal(files.length, 28);
@@ -147,3 +153,4 @@ test('Bình luận có trả lời dùng ID và parent_id, nội dung luôn esca
 test('Không gian làm việc có hai cột đúng và không còn nút quay lại toàn cục',()=>{
  const html=render('account.ejs');assert.match(html,/workspace-content/);assert.match(html,/Cá nhân & cộng đồng/);assert.match(html,/href="\/account\/google"/);assert.doesNotMatch(html,/data-back|class="back-button"/);
 });
+

@@ -94,7 +94,7 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     transactionStarted = true;
 
     const [actors] = await connection.execute(
-      `SELECT id, role, status
+      `SELECT id, role, status, session_version
        FROM users
        WHERE id = ?
        FOR UPDATE`,
@@ -106,7 +106,8 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     if (
       !currentUser ||
       currentUser.status !== 'ACTIVE' ||
-      !['ADMIN', 'AUTHOR'].includes(currentUser.role)
+      !['ADMIN', 'AUTHOR'].includes(currentUser.role) ||
+      (currentUser.session_version ?? 0) !== (user.session_version ?? 0)
     ) {
       await connection.rollback();
       transactionStarted = false;

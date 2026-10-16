@@ -143,6 +143,7 @@ async function commentDestination(idText, actor) {
 async function notifications(actor, query) {
   const f=parseQuery(query), values=[actor.id], terms=['n.user_id=?'];
   terms.push(query.hidden === '1' ? 'n.hidden_at IS NOT NULL' : 'n.hidden_at IS NULL');
+  if (f.q) { terms.push("n.message LIKE ? ESCAPE '!'"); values.push(escapedLike(f.q)); }
   if (query.unread === '1') terms.push('n.read_at IS NULL');
   const where=terms.join(' AND ');
   const data=await pageRows(`SELECT n.id,n.message,n.target_path,n.read_at,n.hidden_at,n.comment_id,n.created_at FROM notifications n WHERE ${where}`,
@@ -200,3 +201,4 @@ async function audit(query) {
   return { ...data, actorOptions, actionOptions, typeOptions };
 }
 module.exports={validContent,parseQuery,comments,thread,autoApproved,list,mutate,commentDestination,notifications,hideNotification,markRead,follows,follow,audit};
+

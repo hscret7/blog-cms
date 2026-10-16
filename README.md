@@ -2,6 +2,9 @@
 
 # Hệ thống Blog CMS
 
+Cài trên máy mới: [hướng dẫn đầy đủ từ database rỗng](docs/cai-moi.md).
+Kết quả rà soát trước báo cáo: [docs/ra-soat-du-an.md](docs/ra-soat-du-an.md).
+
 > Nhánh giao diện hiện có migration 003/004 và chức năng cộng đồng.
 > Trước khi chạy image mới, làm theo [hướng dẫn cập nhật đầy đủ](docs/cap-nhat-cong-dong.md):
 > lấy mã → sao lưu → migration → cấu hình SMTP → build → kiểm tra trên giao diện.
@@ -74,7 +77,7 @@ Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker C
 - Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
 - Đã triển khai giám sát Nginx, MySQL và container bằng Prometheus, các exporter, cAdvisor và Grafana.
 
-Đã bổ sung cấu hình Loki + Promtail, Grafana datasource/dashboard và ba query LogQL. Đang chờ kiểm chứng runtime trên máy sinh viên.
+Đã triển khai Loki + Promtail, Grafana datasource/dashboard và ba query LogQL. Ngày 16/10/2026, sinh viên đã cung cấp kết quả Loki HTTP 200, request 404 đi qua Nginx → Promtail → Loki và cả ba query có dữ liệu. Ảnh minh chứng Grafana cần lưu cho báo cáo.
 Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
 Đã triển khai Nginx reverse proxy với security headers.
 Website được truy cập qua Nginx; app không công bố cổng ra host.
@@ -507,7 +510,7 @@ chưa có các bảng này:
 docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' < db/migrations/001_create_core_tables.sql
 ```
 
-Với cài mới, sau 001 còn phải chạy 003 và 004, theo [hướng dẫn cập nhật](docs/cap-nhat-cong-dong.md), rồi mới chạy app/scripts tạo tài khoản. Với database đang có, không chạy lại 001.
+Với cài mới, phải chạy lần lượt **001 → 002 → 003 → 004 → 005**, rồi mới chạy app/scripts tạo tài khoản. Xem [hướng dẫn cài mới](docs/cai-moi.md). Với database đang có, không chạy lại migration đã áp dụng; các hướng dẫn cập nhật mô tả từng mốc riêng.
 
 Kiểm tra danh sách bảng:
 
@@ -825,3 +828,4 @@ kiểm tra cấu hình, chạy Loki/Promtail, mở Grafana và demo ba query Log
   log đạt. Docker/Grafana thực tế trên máy sinh viên cần kiểm chứng tiếp.
 - Promtail root để đọc log và cAdvisor privileged là ngoại lệ hardening; không
   tuyên bố mọi dịch vụ đều non-root hoặc cách ly tuyệt đối.
+
