@@ -795,13 +795,13 @@ Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
 - Thông báo phân biệt sự kiện đã xảy ra và trạng thái bình luận hiện tại; mở qua nút có CSRF để đánh dấu đã đọc; việc duyệt cập nhật đã đọc cho các thông báo kiểm duyệt liên quan.
 - Theo dõi danh mục, nhận thông báo trong website; đánh dấu đã đọc/tất cả.
 - Quản lý có tìm kiếm, bộ lọc, sắp xếp và phân trang.
-- Nhật ký ADMIN; lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
+- Nhật ký ADMIN: phân tách rõ hai khu vực **Nhật ký hoạt động** (`/admin/activity` - lịch sử thao tác nghiệp vụ) và **Nhật ký kỹ thuật** (`/admin/system-logs` - tra cứu log hệ thống App, Nginx, MySQL qua Loki với bộ lọc dịch vụ, thời gian, từ khóa và nhóm lỗi); lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
 - Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
 
-Bộ test hiện tại: 153 Node + 8 Python đạt; npm audit tại đợt rà soát 16/10 báo 0 lỗ hổng.
-Database migrations 003–005 đã được sinh viên cung cấp kết quả chạy thành công; Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật vẫn cần nghiệm thu riêng. Bản trả lời tiếp cần chạy 006 và kiểm tra trên MySQL/giao diện thật; không suy ra chỉ từ test fixture.
+Bộ test hiện tại: 160 Node + 8 Python đạt; npm audit báo 0 lỗ hổng.
+Database migrations 003–006 đã được sinh viên cung cấp kết quả chạy thành công trên MySQL thật (`missing_reply_target = 0`); luồng trả lời tiếp (nhận thông báo đúng người sau duyệt, anchor và tombstone) đã được xác nhận PASS trên trình duyệt thật. Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật vẫn cần nghiệm thu riêng.
 Kết quả Chromium với fixture ở mốc giao diện trước đây không thay thế kiểm tra UI bản sửa hiện tại hoặc CRUD trên MySQL thật.
-Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md).
+Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md) và [Trả lời tiếp](docs/tra-loi-tiep.md).
 
 ## Cấu hình và dữ liệu
 

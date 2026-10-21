@@ -109,7 +109,9 @@ Trên http://localhost:18090/, mở một bài đã xuất bản:
 6. Xóa một câu ở giữa đã có người trả lời: câu sau vẫn tồn tại, đích không còn
    khả dụng không lộ nội dung; không thể gửi thêm vào câu đã xóa/ẩn.
 
-Đã chạy 153 Node test và 8 Python test tại môi trường kiểm tra. Ca mới bao gồm
+Đã chạy 160 Node test và 8 Python test tại môi trường kiểm tra. Ca mới bao gồm
 chuỗi 40 lượt trả lời, thông báo đích chính xác sau duyệt, khác bài/ẩn/xóa,
-tombstone và nút trả lời/escape trên cả hai trang. Database dùng fixture;
-**chưa chạy migration 006 hoặc luồng này trên MySQL/trình duyệt thật của sinh viên**.
+tombstone, nút trả lời/escape trên cả hai trang và phân tách nhật ký kỹ thuật.
+Cột `reply_to_id` và migration 006 đã được áp dụng và xác nhận trên database MySQL thật (`missing_reply_target = 0`).
+Các ca kiểm tra luồng trả lời trên trình duyệt thật (nhận thông báo đúng người, anchor phân trang và tombstone khi xóa câu ở giữa) đã được sinh viên xác nhận PASS.
+Các tính năng nâng cao (reaction, ảnh đính kèm, push notification, rich-text) chưa nằm trong phạm vi.

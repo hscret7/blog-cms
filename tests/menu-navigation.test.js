@@ -7,7 +7,7 @@ stub('../src/config/database',pool);stub('../src/config/session',{sessionMiddlew
 const app=require('../src/app');
 test('Mọi mục menu ADMIN chạy qua route, service và EJS thật với database fixture',async()=>{
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
- try{const base='http://127.0.0.1:'+server.address().port;for(const url of ['/','/manage/posts','/admin/categories','/admin/users','/admin/comments','/admin/author-requests','/admin/activity','/admin','/notifications','/account','/account/google','/my/comments','/following']){const res=await fetch(base+url);const html=await res.text();assert.equal(res.status,200,url+' '+html.slice(0,200));assert.match(html,/id="main-content"/,url);assert.doesNotMatch(html,/data-back|class="back-button"/,url);}
+ try{const base='http://127.0.0.1:'+server.address().port;for(const url of ['/','/manage/posts','/admin/categories','/admin/users','/admin/comments','/admin/author-requests','/admin/activity','/admin/system-logs','/admin','/notifications','/account','/account/google','/my/comments','/following']){const res=await fetch(base+url);const html=await res.text();assert.equal(res.status,200,url+' '+html.slice(0,200));assert.match(html,/id="main-content"/,url);assert.doesNotMatch(html,/data-back|class="back-button"/,url);}
  assert.ok(queries.some(sql=>/ORDER BY c\.id/.test(sql)));assert.ok(queries.some(sql=>/ORDER BY a\.id/.test(sql)));assert.ok(queries.some(sql=>/ORDER BY n\.id/.test(sql)));
  }finally{await new Promise(r=>server.close(r));}
 });

@@ -20,6 +20,9 @@ const fixture = {
   users: [admin, author, { ...author, id: 5, status: 'LOCKED' }],
   post, posts: [post, { ...post, id: 6, status: 'PUBLISHED' }],
   total: 2, page: 1, totalPages: 2,
+  logs: [], allowedServices: ['app', 'nginx', 'mysql', 'phpmyadmin'],
+  allowedIntervals: ['15m', '1h', '6h', '24h', '7d'], allowedErrorGroups: ['', 'all', '5xx', '4xx', 'db_error', 'connection'],
+  params: { service: '', interval: '1h', errorGroup: '', keyword: '', limit: 100 }, error: null,
   filters: { q: '', category_id: null, page: 1, sort: 'newest', status: '' }, previousUrl: null, nextUrl: '/?page=2',
   publishedAtText: '12:00 13/10/2026', statusCode: 404, message: 'Không tìm thấy.',
   formAction: '/manage/posts', action: '/admin/users', creating: true, submitLabel: 'Lưu'
@@ -60,7 +63,7 @@ test('Thông báo mở bằng POST có CSRF; quản lý bình luận có liên k
 
 test('Toàn bộ trang EJS render được với menu, CSS và liên kết bỏ qua', () => {
   const files = fs.readdirSync(views, { recursive: true }).filter(file => file.endsWith('.ejs') && !file.startsWith('partials/') && !file.endsWith('/form.ejs'));
-  assert.equal(files.length, 28);
+  assert.equal(files.length, 29);
   for (const file of files) {
     const html = render(file);
     assert.match(html, /href="\/css\/site.css\?v=4"/, file);

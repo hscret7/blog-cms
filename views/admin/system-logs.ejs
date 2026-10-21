@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nhật ký kỹ thuật | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content">
+    <div class="page-heading">
+      <div>
+        <span class="eyebrow">Hệ thống & giám sát</span>
+        <h1>Nhật ký kỹ thuật</h1>
+      </div>
+      <div class="heading-actions">
+        <a class="button button-secondary" href="/admin/activity">Nhật ký hoạt động →</a>
+        <a class="button button-secondary" href="/admin">Khu vực quản trị</a>
+      </div>
+    </div>
+    <p>Truy vấn log hạ tầng tập trung (App, Nginx, MySQL, phpMyAdmin) qua Loki. Phân biệt với <strong>Nhật ký hoạt động</strong> (lịch sử thao tác nghiệp vụ của người dùng).</p>
+
+    <form class="filter-bar filter-bar-logs" method="get" action="/admin/system-logs">
+      <p>
+        <label for="service">Dịch vụ</label>
+        <select id="service" name="service">
+          <option value="">Tất cả dịch vụ</option>
+          <% for (const s of allowedServices) { %>
+            <option value="<%= s %>" <%= params.service === s ? 'selected' : '' %>><%= s === 'app' ? 'Ứng dụng (Node.js)' : s === 'nginx' ? 'Nginx (Web proxy)' : s === 'mysql' ? 'MySQL Database' : 'phpMyAdmin' %></option>
+          <% } %>
+        </select>
+      </p>
+
+      <p>
+        <label for="interval">Khoảng thời gian</label>
+        <select id="interval" name="interval">
+          <% for (const inv of allowedIntervals) { %>
+            <option value="<%= inv %>" <%= params.interval === inv ? 'selected' : '' %>><%= inv === '15m' ? '15 phút gần đây' : inv === '1h' ? '1 giờ gần đây' : inv === '6h' ? '6 giờ gần đây' : inv === '24h' ? '24 giờ gần đây' : '7 ngày gần đây' %></option>
+          <% } %>
+        </select>
+      </p>
+
+      <p>
+        <label for="errorGroup">Nhóm lỗi</label>
+        <select id="errorGroup" name="errorGroup">
+          <option value="" <%= !params.errorGroup ? 'selected' : '' %>>Tất cả mức độ</option>
+          <option value="all" <%= params.errorGroup === 'all' ? 'selected' : '' %>>Lỗi HTTP chung (status &ge; 400)</option>
+          <option value="5xx" <%= params.errorGroup === '5xx' ? 'selected' : '' %>>Lỗi máy chủ (HTTP 5xx)</option>
+          <option value="4xx" <%= params.errorGroup === '4xx' ? 'selected' : '' %>>Lỗi client (HTTP 4xx)</option>
+          <option value="db_error" <%= params.errorGroup === 'db_error' ? 'selected' : '' %>>Lỗi Database (ERROR)</option>
+          <option value="connection" <%= params.errorGroup === 'connection' ? 'selected' : '' %>>Lỗi kết nối (ECONNREFUSED)</option>
+        </select>
+      </p>
+
+      <p>
+        <label for="limit">Số dòng tối đa</label>
+        <select id="limit" name="limit">
+          <option value="50" <%= params.limit === 50 ? 'selected' : '' %>>50 dòng</option>
+          <option value="100" <%= params.limit === 100 ? 'selected' : '' %>>100 dòng</option>
+          <option value="250" <%= params.limit === 250 ? 'selected' : '' %>>250 dòng</option>
+          <option value="500" <%= params.limit === 500 ? 'selected' : '' %>>500 dòng</option>
+        </select>
+      </p>
+
+      <p class="filter-bar-full">
+        <label for="q">Từ khóa tìm kiếm (trong nội dung log)</label>
+        <input id="q" name="q" value="<%= params.keyword %>" placeholder="Nhập từ khóa cần tra cứu (ví dụ: POST, ECONNREFUSED, error...)">
+      </p>
+
+      <div class="filter-actions">
+        <button type="submit">Tra cứu log</button>
+        <a class="button button-secondary" href="/admin/system-logs">Xóa bộ lọc</a>
+      </div>
+    </form>
+
+    <% if (error) { %>
+      <div role="alert" class="log-alert">
+        <strong>Lỗi kết nối hoặc truy vấn Loki:</strong> <%= error %>
+      </div>
+    <% } %>
+
+    <div class="section-heading">
+      <h2>Kết quả tra cứu</h2>
+      <span class="count-label">Hiển thị <%= total %> dòng log (mới nhất trước)</span>
+    </div>
+
+    <% if (!error && total === 0) { %>
+      <div class="empty-state">
+        <p>Không có dòng log nào phù hợp trong khoảng thời gian đã chọn.</p>
+        <p><small>Thử mở rộng khoảng thời gian hoặc bỏ bớt điều kiện lọc từ khóa / nhóm lỗi.</small></p>
+      </div>
+    <% } %>
+
+    <% if (logs && logs.length > 0) { %>
+      <div class="table-wrap log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th scope="col" style="width: 170px;">Thời gian (VN)</th>
+              <th scope="col" style="width: 120px;">Dịch vụ</th>
+              <th scope="col" style="width: 80px;">Luồng</th>
+              <th scope="col">Nội dung log</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% for (const item of logs) { %>
+              <tr>
+                <td class="log-time"><code><%= item.timeFormatted %></code></td>
+                <td>
+                  <span class="badge badge-<%= item.service %>"><%= item.service %></span>
+                </td>
+                <td><small class="text-muted"><%= item.streamType %></small></td>
+                <td class="log-line">
+                  <% if (item.parsedJson) { %>
+                    <div class="log-structured">
+                      <% if (item.parsedJson.method && item.parsedJson.path) { %>
+                        <strong><%= item.parsedJson.method %> <%= item.parsedJson.path %></strong>
+                        <% if (item.parsedJson.status) { %>
+                          <span class="badge <%= item.parsedJson.status >= 500 ? 'badge-danger' : item.parsedJson.status >= 400 ? 'badge-warning' : 'badge-success' %>"><%= item.parsedJson.status %></span>
+                        <% } %>
+                        <% if (item.parsedJson.duration !== undefined) { %>
+                          <small class="text-muted">(<%= item.parsedJson.duration %>s)</small>
+                        <% } %>
+                      <% } else { %>
+                        <pre><code><%= item.rawLine %></code></pre>
+                      <% } %>
+                    </div>
+                  <% } else { %>
+                    <pre><code><%= item.rawLine %></code></pre>
+                  <% } %>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

@@ -15,7 +15,15 @@
           <a href="/admin/users" <%- activePath.startsWith('/admin/users') ? 'aria-current="page"' : '' %>>Người dùng</a>
           <a href="/admin/comments" <%- activePath === '/admin/comments' ? 'aria-current="page"' : '' %>>Bình luận</a>
           <a href="/admin/author-requests" <%- activePath === '/admin/author-requests' ? 'aria-current="page"' : '' %>>Duyệt tác giả</a>
-      <a href="/admin/activity" <%- activePath === '/admin/activity' ? 'aria-current="page"' : '' %>>Nhật ký</a>
+          <div class="nav-dropdown">
+            <button type="button" class="nav-dropdown-btn <%- (activePath === '/admin/activity' || activePath === '/admin/system-logs') ? 'active' : '' %>" aria-haspopup="true" aria-expanded="false">
+              Nhật ký hệ thống <span class="nav-arrow" aria-hidden="true">▾</span>
+            </button>
+            <div class="nav-dropdown-menu">
+              <a href="/admin/activity" <%- activePath === '/admin/activity' ? 'aria-current="page"' : '' %>>Nhật ký hoạt động</a>
+              <a href="/admin/system-logs" <%- activePath === '/admin/system-logs' ? 'aria-current="page"' : '' %>>Nhật ký kỹ thuật</a>
+            </div>
+          </div>
           <a href="/admin" <%- activePath === '/admin' ? 'aria-current="page"' : '' %>>Quản trị</a>
         <% } %>
         <a href="/notifications" <%- activePath === '/notifications' ? 'aria-current="page"' : '' %>>Thông báo (<%= typeof unreadCount === 'number' ? unreadCount : 0 %>)</a>

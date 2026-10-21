@@ -1,42 +1,179 @@
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><%= mode === 'notifications' ? 'Thông báo' : mode === 'audit' ? 'Nhật ký' : 'Bình luận' %> | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=4"></head><body><%- include('../partials/header') %>
 <main id="main-content">
-<h1><%= mode === 'notifications' ? 'Thông báo của bạn' : mode === 'audit' ? 'Nhật ký hoạt động' : mode === 'moderation' ? 'Quản lý bình luận' : mode === 'authored' ? 'Bình luận trên bài của tôi' : 'Bình luận của tôi' %></h1>
+<div class="page-heading">
+  <div>
+    <% if(mode === 'audit') { %>
+      <span class="eyebrow">Hệ thống & giám sát</span>
+      <h1>Nhật ký hoạt động</h1>
+    <% } else if(mode === 'notifications') { %>
+      <span class="eyebrow">Cá nhân</span>
+      <h1>Thông báo của bạn</h1>
+    <% } else { %>
+      <span class="eyebrow">Cộng đồng</span>
+      <h1><%= mode === 'moderation' ? 'Quản lý bình luận' : mode === 'authored' ? 'Bình luận trên bài của tôi' : 'Bình luận của tôi' %></h1>
+    <% } %>
+  </div>
+  <% if(mode === 'audit') { %>
+    <div class="heading-actions">
+      <a class="button button-secondary" href="/admin/system-logs">Nhật ký kỹ thuật →</a>
+      <a class="button button-secondary" href="/admin">Khu vực quản trị</a>
+    </div>
+  <% } %>
+</div>
+<% if(mode === 'audit') { %>
+  <p>Lịch sử thao tác nghiệp vụ, quản lý tài khoản, xuất bản bài viết và thay đổi nội dung trên website.</p>
+<% } %>
+
 <form class="filter-bar" method="get">
   <p><label for="q">Tìm kiếm</label><input id="q" name="q" value="<%= filters.q %>"></p>
   <% if(mode==='notifications' && query.hidden==='1') { %><input type="hidden" name="hidden" value="1"><% } %>
   <% if(['mine','moderation','authored'].includes(mode)) { %><p><label for="status">Trạng thái</label><select id="status" name="status"><option value="">Tất cả</option><% for(const [key,label] of [['PENDING','Chờ duyệt'],['APPROVED','Đã duyệt'],['HIDDEN','Đã ẩn']]) { %><option value="<%= key %>" <%= filters.status===key?'selected':'' %>><%= label %></option><% } %></select></p><% } %>
   <% if(mode==='notifications') { %><p><label for="unread">Lọc thông báo</label><select id="unread" name="unread"><option value="">Tất cả</option><option value="1" <%= query.unread==='1'?'selected':'' %>>Chưa đọc</option></select></p><% } %>
-  <p><label for="sort">Thứ tự</label><select id="sort" name="sort"><option value="newest" <%= filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select></p><button>Lọc</button>
+  <p><label for="sort">Thứ tự</label><select id="sort" name="sort"><option value="newest" <%= filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select></p>
   <% if(mode==='audit') { %>
     <% for(const [key,label,options,field] of [['actor','Người thực hiện',typeof actorOptions !== 'undefined'?actorOptions:[],'id'],['action','Thao tác',typeof actionOptions !== 'undefined'?actionOptions:[],'action'],['type','Đối tượng',typeof typeOptions !== 'undefined'?typeOptions:[],'object_type']]) { %><p><label for="<%= key %>"><%= label %></label><select id="<%= key %>" name="<%= key %>"><option value="">Tất cả</option><% for(const option of options) { %><option value="<%= option[field] %>" <%= query[key]===String(option[field])?'selected':'' %>><%= key==='actor'?option.name:option[field] %></option><% } %></select></p><% } %>
     <% for(const [key,label] of [['from','Từ ngày (UTC)'],['to','Đến ngày (UTC)']]) { %><p><label for="<%= key %>"><%= label %></label><input id="<%= key %>" name="<%= key %>" type="date" value="<%= typeof query[key]==='string'?query[key]:'' %>"></p><% } %>
   <% } %>
+  <div class="filter-actions">
+    <button>Lọc</button>
+    <a class="button button-secondary" href="<%= {notifications:'/notifications',moderation:'/admin/comments',mine:'/my/comments',authored:'/manage/comments',audit:'/admin/activity'}[mode] %>">Xóa bộ lọc</a>
+  </div>
 </form>
-<% if(mode==='notifications') { %><p><a href="/notifications">Thông báo đang hiển thị</a> · <a href="/notifications?hidden=1">Thông báo đã ẩn</a></p><% } %>
-<p><a href="<%= {notifications:'/notifications',moderation:'/admin/comments',mine:'/my/comments',authored:'/manage/comments',audit:'/admin/activity'}[mode] %>">Xóa bộ lọc</a></p>
-<p>Có <%= total %> kết quả.</p>
-<% if(mode==='notifications') { %><form method="post" action="/notifications/all/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Đánh dấu tất cả đã đọc</button></form><% } %>
+
+<% if(mode==='notifications') { %>
+  <div class="nav-subtabs">
+    <a class="subtab-item <%= query.hidden !== '1' ? 'active' : '' %>" href="/notifications">Thông báo đang hiển thị</a>
+    <a class="subtab-item <%= query.hidden === '1' ? 'active' : '' %>" href="/notifications?hidden=1">Thông báo đã ẩn</a>
+    <div class="subtab-spacer"></div>
+    <form method="post" action="/notifications/all/read" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button button-secondary">Đánh dấu tất cả đã đọc</button></form>
+  </div>
+<% } %>
+
+<div class="section-heading">
+  <h2>Danh sách</h2>
+  <span class="count-label">Có <%= total %> kết quả</span>
+</div>
+
 <% if(!rows.length) { %><p class="empty-state">Chưa có kết quả phù hợp.</p><% } %>
-<% rows.forEach(row=>{ %>
-<section class="comment-card" id="comment-<%= row.id %>">
-  <% if(mode==='audit') { %><h2><%= row.action %></h2><p>Người thực hiện: <%= row.name || 'Hệ thống' %> · <%= row.object_type %> #<%= row.object_id %></p>
-  <% } else if(mode==='notifications') { %>
-    <h2><%= row.message %></h2><p><span class="badge"><%= row.read_at?'Đã đọc':'Chưa đọc' %></span></p><details data-preview><summary>Xem nội dung</summary><p class="post-content"><%= row.preview || (row.comment_id ? 'Nội dung không còn khả dụng hoặc bạn không có quyền xem.' : row.message) %></p><button type="button" class="button-secondary" data-collapse>Thu gọn</button></details>
-    <% if(!row.comment_id && ['/my/comments','/admin/comments'].includes(row.target_path)) { %><p>Thông báo cũ chưa lưu vị trí bình luận; liên kết mở danh sách để tìm nội dung.</p><% } %>
-    <% if(row.commentState) { %><p>Trạng thái hiện tại: <strong><%= row.commentState %></strong></p><% } %>
-    <form method="post" action="/notifications/<%= row.id %>/open"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button><%= row.comment_id ? 'Mở bình luận' : 'Mở nội dung' %></button></form>
-    <form method="post" action="/notifications/<%= row.id %>/<%= row.hidden_at ? 'restore' : 'hide' %>"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary"><%= row.hidden_at ? 'Hiện lại thông báo' : 'Ẩn thông báo' %></button></form><% if(!row.read_at) { %><form method="post" action="/notifications/<%= row.id %>/read"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Đánh dấu đã đọc</button></form><% } %>
-  <% } else { %>
-    <h2><%= row.title %></h2><% if(row.status==='APPROVED') { %><a href="/comments/<%= row.id %>/go?view=public">Xem bình luận trên bài →</a><% } else { %><a href="/posts/<%= row.slug %>">Xem bài viết →</a><% } %><p><%= row.name %> · <span class="badge"><%= {PENDING:'Chờ duyệt',APPROVED:'Đã duyệt',HIDDEN:'Đã ẩn'}[row.status] %></span></p><p class="post-content"><%= row.content %></p>
-    <% if(mode !== 'authored') { %>
-    <% if(mode==='mine') { %><details><summary>Sửa bình luận</summary><form method="post" action="/my/comments/<%= row.id %>/edit"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="content-<%= row.id %>">Nội dung</label><textarea id="content-<%= row.id %>" name="content" required><%= row.content %></textarea><button>Lưu bình luận</button></form></details>
-    <% } else { %><% for(const [status,label] of [['APPROVED','Duyệt'],['HIDDEN','Ẩn']]) { %><form method="post" action="/admin/comments/<%= row.id %>/moderate"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="status" value="<%= status %>"><button><%= label %></button></form><% } %><% } %>
-    <form method="post" action="<%= mode==='mine'?'/my/comments/':'/admin/comments/' %><%= row.id %>/delete" onsubmit="return confirm('Xóa bình luận này?');"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button>Xóa</button></form>
-    <% } %>
-  <% } %>
-  <small><%= new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}).format(row.created_at) %></small>
-</section>
-<% }); %>
+
+<% if(mode === 'audit' && rows.length > 0) { %>
+  <div class="table-wrap log-table-wrap">
+    <table class="log-table audit-table">
+      <thead>
+        <tr>
+          <th scope="col" style="width: 170px;">Thời gian (VN)</th>
+          <th scope="col" style="width: 180px;">Người thực hiện</th>
+          <th scope="col" style="width: 200px;">Thao tác</th>
+          <th scope="col">Đối tượng tác động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(row => { %>
+          <tr id="comment-<%= row.id %>">
+            <td class="log-time"><code><%= new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}).format(row.created_at) %></code></td>
+            <td><strong><%= row.name || 'Hệ thống' %></strong></td>
+            <td><span class="badge"><%= row.action %></span></td>
+            <td>
+              <code><%= row.object_type %></code>
+              <% if(row.object_id) { %>
+                <span class="text-muted">#<%= row.object_id %></span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } else if(mode === 'notifications') { %>
+  <div class="notification-list">
+    <% rows.forEach(row => { %>
+      <section class="notification-card <%= row.read_at ? 'is-read' : 'is-unread' %>" id="comment-<%= row.id %>">
+        <div class="notification-header">
+          <div class="notification-meta">
+            <span class="badge <%= row.read_at ? '' : 'badge-mint' %>"><%= row.read_at ? 'Đã đọc' : 'Chưa đọc' %></span>
+            <% if(row.commentState) { %>
+              <span class="badge badge-warning">Trạng thái hiện tại: <%= row.commentState %></span>
+            <% } %>
+            <small class="text-muted"><%= new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}).format(row.created_at) %></small>
+          </div>
+          <h2 class="notification-title"><%= row.message %></h2>
+        </div>
+
+        <details class="notification-preview" data-preview>
+          <summary>Xem nội dung</summary>
+          <p class="post-content"><%= row.preview || (row.comment_id ? 'Nội dung không còn khả dụng hoặc bạn không có quyền xem.' : row.message) %></p>
+          <button type="button" class="button-secondary" data-collapse>Thu gọn</button>
+        </details>
+
+        <% if(!row.comment_id && ['/my/comments','/admin/comments'].includes(row.target_path)) { %>
+          <p class="text-muted"><small>Thông báo cũ chưa lưu vị trí bình luận; liên kết mở danh sách để tìm nội dung.</small></p>
+        <% } %>
+
+        <div class="item-actions">
+          <form method="post" action="/notifications/<%= row.id %>/open" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button><%= row.comment_id ? 'Mở bình luận' : 'Mở nội dung' %></button></form>
+          <% if(!row.read_at) { %>
+            <form method="post" action="/notifications/<%= row.id %>/read" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary">Đánh dấu đã đọc</button></form>
+          <% } %>
+          <form method="post" action="/notifications/<%= row.id %>/<%= row.hidden_at ? 'restore' : 'hide' %>" class="inline-form"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="button-secondary"><%= row.hidden_at ? 'Hiện lại thông báo' : 'Ẩn thông báo' %></button></form>
+        </div>
+      </section>
+    <% }); %>
+  </div>
+<% } else if(rows.length > 0) { %>
+  <div class="comment-list">
+    <% rows.forEach(row => { %>
+      <section class="comment-card" id="comment-<%= row.id %>">
+        <div class="comment-card-header">
+          <div>
+            <h2><%= row.title %></h2>
+            <div class="comment-card-meta">
+              <strong><%= row.name %></strong>
+              <span class="badge"><%= {PENDING:'Chờ duyệt',APPROVED:'Đã duyệt',HIDDEN:'Đã ẩn'}[row.status] %></span>
+              <small class="text-muted"><%= new Intl.DateTimeFormat('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',dateStyle:'short',timeStyle:'short'}).format(row.created_at) %></small>
+            </div>
+          </div>
+          <div>
+            <% if(row.status === 'APPROVED') { %>
+              <a class="button button-secondary" href="/comments/<%= row.id %>/go?view=public">Xem bình luận trên bài →</a>
+            <% } else { %>
+              <a class="button button-secondary" href="/posts/<%= row.slug %>">Xem bài viết →</a>
+            <% } %>
+          </div>
+        </div>
+
+        <p class="post-content comment-body"><%= row.content %></p>
+
+        <% if(mode !== 'authored') { %>
+          <div class="item-actions">
+            <% if(mode === 'mine') { %>
+              <details class="comment-edit-details">
+                <summary>Sửa bình luận</summary>
+                <form method="post" action="/my/comments/<%= row.id %>/edit">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <p><label for="content-<%= row.id %>">Nội dung</label><textarea id="content-<%= row.id %>" name="content" required><%= row.content %></textarea></p>
+                  <button>Lưu bình luận</button>
+                </form>
+              </details>
+            <% } else { %>
+              <% for(const [status,label] of [['APPROVED','Duyệt'],['HIDDEN','Ẩn']]) { %>
+                <form method="post" action="/admin/comments/<%= row.id %>/moderate" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <input type="hidden" name="status" value="<%= status %>">
+                  <button class="<%= status === 'APPROVED' ? '' : 'button-secondary' %>"><%= label %></button>
+                </form>
+              <% } %>
+            <% } %>
+            <form method="post" action="<%= mode==='mine'?'/my/comments/':'/admin/comments/' %><%= row.id %>/delete" onsubmit="return confirm('Xóa bình luận này?');" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="button-danger">Xóa</button>
+            </form>
+          </div>
+        <% } %>
+      </section>
+    <% }); %>
+  </div>
+<% } %>
+
 <nav class="pagination" aria-label="Phân trang"><% if(previousUrl) { %><a href="<%= previousUrl %>">← Trang trước</a><% } %><p>Trang <%= filters.page %> / <%= totalPages %></p><% if(nextUrl) { %><a href="<%= nextUrl %>">Trang sau →</a><% } %></nav>
 </main><%- include('../partials/footer') %></body></html>
 

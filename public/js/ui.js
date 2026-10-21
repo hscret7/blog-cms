@@ -52,3 +52,23 @@ for(const form of document.querySelectorAll('form')) {
 document.querySelectorAll('[data-clear-draft]').forEach(node=>{try{sessionStorage.removeItem('cms-draft:'+node.dataset.clearDraft);}catch{}});
 const retry=document.querySelector('[data-retry-after]');
 if(retry){let seconds=Number(retry.dataset.retryAfter);const timer=setInterval(()=>{seconds=Math.max(0,seconds-1);retry.textContent=String(seconds);if(!seconds)clearInterval(timer);},1000);}
+
+// Dropdown menu cho Nhật ký hệ thống
+document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+  const btn = dropdown.querySelector('.nav-dropdown-btn');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!isExpanded));
+    dropdown.classList.toggle('open', !isExpanded);
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.nav-dropdown')) {
+    document.querySelectorAll('.nav-dropdown').forEach(dropdown => {
+      dropdown.classList.remove('open');
+      dropdown.querySelector('.nav-dropdown-btn')?.setAttribute('aria-expanded', 'false');
+    });
+  }
+});

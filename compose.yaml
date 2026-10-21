@@ -41,6 +41,7 @@ services:
     networks:
       - database
       - proxy
+      - monitoring
 
     depends_on:
       mysql:

@@ -94,6 +94,7 @@ app.use(async (req, res, next) => {
 app.use(publicPostRoutes);
 app.use(require('./routes/google-routes'));
 app.use(accountRoutes);
+app.use(require('./routes/technical-log-routes'));
 app.use(require('./routes/author-request-routes'));
 app.use(communityRoutes);
 app.use(coverRoutes);
