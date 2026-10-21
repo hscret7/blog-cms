@@ -8,8 +8,8 @@ function buildFilters({ q = '', category_id = null }) {
     // Tìm ký tự % và _ như văn bản, không coi là wildcard.
     const escaped = q.replace(/[!%_]/g, (character) => `!${character}`);
 
-    conditions.push("p.title LIKE ? ESCAPE '!'");
-    values.push(`%${escaped}%`);
+    conditions.push("(p.title LIKE ? ESCAPE '!' OR p.content LIKE ? ESCAPE '!')");
+    values.push(`%${escaped}%`, `%${escaped}%`);
   }
 
   if (category_id !== null) {
@@ -52,9 +52,12 @@ async function findPublishedPage(
 
   const { where, values } = buildFilters(filters);
 
+  const order = { newest: 'p.published_at DESC, p.id DESC', oldest: 'p.published_at ASC, p.id ASC', title: 'p.title ASC, p.id DESC' }[filters.sort || 'newest'];
+  if (!order) throw new Error('Thứ tự không hợp lệ.');
   const [rows] = await pool.execute(
     `SELECT
        p.id,
+       p.author_id,
        p.title,
        p.slug,
        p.cover_path,
@@ -66,7 +69,7 @@ async function findPublishedPage(
      JOIN users AS u ON u.id = p.author_id
      JOIN categories AS c ON c.id = p.category_id
      WHERE ${where}
-     ORDER BY p.published_at DESC, p.id DESC
+     ORDER BY ${order}
      LIMIT ? OFFSET ?`,
     [...values, limit, offset]
   );
@@ -78,6 +81,7 @@ async function findPublishedBySlug(slug) {
   const [rows] = await pool.execute(
     `SELECT
        p.id,
+       p.author_id,
        p.title,
        p.slug,
        p.content,

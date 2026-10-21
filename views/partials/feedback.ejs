@@ -1,0 +1,3 @@
+<% if (typeof feedback !== 'undefined' && feedback) { %>
+  <div class="page-context"><p class="feedback-banner" role="status" <% if (feedback.draftKey) { %>data-clear-draft="<%= feedback.draftKey %>"<% } %>><%= feedback.message %></p></div>
+<% } %>

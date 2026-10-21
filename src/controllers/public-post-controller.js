@@ -1,4 +1,6 @@
 const publicPostService = require('../services/public-post-service');
+const community = require('../services/community-service');
+const { getCsrfToken } = require('../middlewares/csrf');
 const categoryRepository = require('../repositories/category-repository');
 
 function renderError(res, result) {
@@ -20,6 +22,7 @@ function buildPageUrl(filters, page) {
     params.set('category_id', String(filters.category_id));
   }
 
+  if (filters.sort) params.set('sort', filters.sort);
   params.set('page', String(page));
 
   return `/?${params.toString()}`;
@@ -68,7 +71,9 @@ async function showPost(req, res) {
 
   return res.render('public/detail', {
     post,
-    publishedAtText
+    publishedAtText,
+    csrfToken: getCsrfToken(req),
+    commentPage: await community.comments(post.id, req.query)
   });
 }
 

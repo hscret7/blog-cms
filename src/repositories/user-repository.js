@@ -8,7 +8,10 @@ async function findByEmail(email) {
        email,
        password_hash,
        role,
-       status
+       status,
+       email_verified_at,
+       session_version,
+       (password_hash IS NOT NULL) AS has_password
      FROM users
      WHERE email = ?
      LIMIT 1`,
@@ -25,7 +28,10 @@ async function findById(id) {
        name,
        email,
        role,
-       status
+       status,
+       email_verified_at,
+       session_version,
+       (password_hash IS NOT NULL) AS has_password
      FROM users
      WHERE id = ?
      LIMIT 1`,

@@ -12,7 +12,7 @@ test('Truy vấn rỗng dùng giá trị mặc định', () => {
     data: {
       q: '',
       category_id: null,
-      page: 1
+      page: 1, sort: 'newest'
     }
   });
 });
@@ -28,7 +28,7 @@ test('Chuẩn hóa từ khóa và chuyển ID, số trang thành số', () => {
   assert.deepEqual(result.data, {
     q: 'Công nghệ',
     category_id: 4,
-    page: 2
+    page: 2, sort: 'newest'
   });
 });
 
@@ -94,4 +94,8 @@ test('Kiểm tra slug công khai', () => {
   ]) {
     assert.equal(validatePublicSlug(slug), false);
   }
+});
+test('Chỉ nhận ba thứ tự sắp xếp được phép', () => {
+  for (const sort of ['newest','oldest','title']) assert.equal(validatePublicQuery({ sort }).data.sort, sort);
+  for (const sort of ['DROP TABLE posts', [], null, 'random']) assert.equal(validatePublicQuery({ sort }).isValid, false);
 });

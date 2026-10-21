@@ -1,3 +1,4 @@
+const activity = require('./activity-service');
 const pool = require('../config/database');
 const repository = require('../repositories/admin-user-repository');
 const { hashPassword } = require('./password-service');
@@ -68,7 +69,8 @@ async function withAdminTransaction(actor, action) {
     if (
       !currentActor ||
       currentActor.role !== 'ADMIN' ||
-      currentActor.status !== 'ACTIVE'
+      currentActor.status !== 'ACTIVE' ||
+      (currentActor.session_version ?? 0) !== (actor.session_version ?? 0)
     ) {
       await connection.rollback();
       transactionStarted = false;
@@ -158,6 +160,7 @@ async function createUser(input, actor) {
       connection
     );
 
+    await activity.record(connection, actor.id, 'USER_CREATE', 'user', id);
     return { success: true, id };
   });
 }
@@ -209,11 +212,11 @@ async function updateUser(idParam, input, actor) {
       };
     }
 
-    await repository.update(
-      target.id,
-      validation.data,
-      connection
-    );
+    await repository.update(target.id, validation.data, connection);
+    await activity.record(connection, actor.id, 'USER_UPDATE', 'user', target.id);
+    if (target.role !== validation.data.role) {
+      await activity.notify(connection, target.id, 'Vai trò tài khoản của bạn đã thay đổi thành ' + validation.data.role + '.', '/account');
+    }
 
     return { success: true };
   });
@@ -263,6 +266,7 @@ async function changeStatus(idParam, actor, status) {
 
     if (target.status !== status) {
       await repository.setStatus(target.id, status, connection);
+      await activity.record(connection, actor.id, status === 'LOCKED' ? 'USER_LOCK' : 'USER_UNLOCK', 'user', target.id);
     }
 
     return { success: true };

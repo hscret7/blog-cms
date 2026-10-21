@@ -24,6 +24,7 @@ function finishOperation(req, res, result) {
     });
   }
 
+  require('../middlewares/ui-context').setFeedback(req,'Đã cập nhật ảnh đại diện.');
   return res.redirect(303, `/manage/posts/${result.id}/edit`);
 }
 
@@ -79,6 +80,7 @@ async function getCover(req, res) {
     if (
       !viewer ||
       viewer.status !== 'ACTIVE' ||
+      (req.session.authVersion || 0) !== viewer.session_version ||
       !['ADMIN', 'AUTHOR'].includes(viewer.role) ||
       (viewer.role !== 'ADMIN' && viewer.id !== post.author_id)
     ) {

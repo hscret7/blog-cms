@@ -1,3 +1,4 @@
+const { setFeedback } = require('../middlewares/ui-context');
 const service = require('../services/admin-user-service');
 const { getCsrfToken } = require('../middlewares/csrf');
 
@@ -20,16 +21,8 @@ function renderError(req, res, result) {
 async function listUsers(req, res) {
   res.set('Cache-Control', 'no-store');
 
-  const result = await service.getAllUsers(req.user);
-  if (!result.success) {
-    return renderError(req, res, result);
-  }
-
-  return res.render('users/index', {
-    user: req.user,
-    users: result.data,
-    csrfToken: getCsrfToken(req)
-  });
+  const data = await require('../services/list-service').getPage('users', req.user, req.query);
+  return res.render('users/index', { user: req.user, csrfToken: getCsrfToken(req), ...data, users: data.rows });
 }
 
 function showCreateForm(req, res) {
@@ -67,6 +60,7 @@ async function createUser(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -121,6 +115,7 @@ async function updateUser(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -132,6 +127,7 @@ async function lockUser(req, res) {
     return renderError(req, res, result);
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 
@@ -143,6 +139,7 @@ async function unlockUser(req, res) {
     return renderError(req, res, result);
   }
 
+  setFeedback(req, 'Đã cập nhật người dùng.');
   return res.redirect(303, '/admin/users');
 }
 

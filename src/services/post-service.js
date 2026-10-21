@@ -1,3 +1,4 @@
+const activity = require('./activity-service');
 const postCoverService = require('./post-cover-service');
 const postRepository = require('../repositories/post-repository');
 const categoryRepository = require('../repositories/category-repository');
@@ -7,6 +8,19 @@ const {
 } = require('../validators/post-validator');
 
 const PAGE_SIZE = 20;
+async function writePost(actor, id, action, write) {
+  return activity.withActor(actor, ['ADMIN', 'AUTHOR'], async (connection, currentActor) => {
+    if (id && !await postRepository.lockByIdForUser(id, currentActor, connection)) return 0;
+    const result = await write(connection, currentActor);
+    if (result > 0) {
+      const postId = id || result;
+      await activity.record(connection, currentActor.id, action, 'post', postId);
+      if (action === 'POST_CREATE' || action === 'POST_UPDATE') await activity.snapshot(connection, currentActor.id, postId);
+      if (action === 'POST_PUBLISH') await activity.published(connection, postId);
+    }
+    return result;
+  });
+}
 
 function notFound() {
   return {
@@ -136,10 +150,8 @@ async function createDraft(user, input) {
   }
 
   try {
-    const id = await postRepository.createDraft(
-      user,
-      validation.data
-    );
+    const id = await writePost(user, null, 'POST_CREATE', (connection, actor) =>
+      postRepository.createDraft(actor, validation.data, connection));
 
     return {
       success: true,
@@ -177,11 +189,8 @@ async function updatePost(idParam, user, input) {
   }
 
   try {
-    const affectedRows = await postRepository.updateContent(
-      postResult.data.id,
-      user,
-      validation.data
-    );
+    const affectedRows = await writePost(user, postResult.data.id, 'POST_UPDATE', (connection, actor) =>
+      postRepository.updateContent(postResult.data.id, actor, validation.data, connection));
 
     if (affectedRows === 0) {
       const remaining = await postRepository.findByIdForUser(
@@ -220,9 +229,11 @@ async function changePublication(idParam, user, targetStatus) {
     };
   }
 
-  const affectedRows = targetStatus === 'PUBLISHED'
-    ? await postRepository.publish(post.id, user)
-    : await postRepository.unpublish(post.id, user);
+  const affectedRows = await writePost(user, post.id,
+    targetStatus === 'PUBLISHED' ? 'POST_PUBLISH' : 'POST_UNPUBLISH',
+    (connection, actor) => targetStatus === 'PUBLISHED'
+      ? postRepository.publish(post.id, actor, connection)
+      : postRepository.unpublish(post.id, actor, connection));
 
   if (affectedRows > 0) {
     return {

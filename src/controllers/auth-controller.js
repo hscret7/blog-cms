@@ -1,3 +1,5 @@
+const activity = require('../services/activity-service');
+const pool = require('../config/database');
 const { getCsrfToken } = require('../middlewares/csrf');
 const { authenticate } = require('../services/auth-service');
 
@@ -38,6 +40,7 @@ async function login(req, res) {
   });
 
   req.session.userId = user.id;
+  req.session.authVersion = user.session_version;
   getCsrfToken(req);
 
   await new Promise((resolve, reject) => {
@@ -50,6 +53,7 @@ async function login(req, res) {
     });
   });
 
+  await activity.record(pool, user.id, 'LOGIN', 'user', user.id);
   return res.redirect(303, '/account');
 }
 
@@ -63,6 +67,7 @@ function showAccount(req, res) {
 }
 
 async function logout(req, res) {
+  const actorId = req.session?.userId;
   res.set('Cache-Control', 'no-store');
 
   await new Promise((resolve, reject) => {
@@ -82,6 +87,7 @@ async function logout(req, res) {
     secure: false
   });
 
+  if (Number.isInteger(actorId)) await activity.record(pool, actorId, 'LOGOUT', 'user', actorId);
   return res.redirect(303, '/login');
 }
 

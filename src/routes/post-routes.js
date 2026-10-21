@@ -75,6 +75,7 @@ router.post(
 );
 
 router.get('/manage/posts/:id/edit', showEditForm);
+router.get('/manage/posts/:id/history', require('../controllers/post-history-controller').showHistory);
 
 router.post(
   '/manage/posts/:id/update',

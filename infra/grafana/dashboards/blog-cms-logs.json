@@ -1,0 +1,130 @@
+{
+  "uid": "blog-cms-logs",
+  "title": "Blog CMS - Logs",
+  "tags": [
+    "blog-cms",
+    "loki",
+    "commit-3"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Blog CMS",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "blog-cms-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "blog-cms-loki"
+          },
+          "expr": "{project=\"blog-cms\",service=~\"app|nginx|mysql|phpmyadmin\"}",
+          "queryType": "range",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 2,
+      "title": "HTTP lỗi từ Nginx",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "blog-cms-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "blog-cms-loki"
+          },
+          "expr": "{project=\"blog-cms\",service=\"nginx\"} | json | __error__=\"\" | status >= 400",
+          "queryType": "range",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "Số dòng log trong 10 phút",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "blog-cms-loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "blog-cms-loki"
+          },
+          "expr": "sum by (service) (count_over_time({project=\"blog-cms\",service=~\"app|nginx|mysql|phpmyadmin\"}[10m]))",
+          "queryType": "range",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<% if(typeof currentUser!=='undefined' && currentUser?.email_verified_at && (typeof allowReplies==='undefined' || allowReplies)) { %>
+<details data-reply>
+  <summary>Trả lời</summary>
+  <form method="post" action="/posts/<%= post.id %>/comments">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <input type="hidden" name="parent_id" value="<%= target.id %>">
+    <label for="reply-<%= target.id %>">Trả lời <%= target.name %></label>
+    <textarea id="reply-<%= target.id %>" name="content" required></textarea>
+    <button>Gửi trả lời</button>
+    <button type="button" data-collapse class="button-secondary">Hủy</button>
+  </form>
+</details>
+<% } %>

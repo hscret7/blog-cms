@@ -7,8 +7,20 @@ function validatePassword(password) {
 
   const length = Array.from(password).length;
 
-  if (length < 15 || length > 128) {
-    throw new Error('Mật khẩu phải có từ 15 đến 128 ký tự.');
+  if (length < 8 || length > 128) {
+    throw new Error('Mật khẩu phải có từ 8 đến 128 ký tự.');
+  }
+
+  if (
+    !/[A-Z]/.test(password) ||
+    !/[a-z]/.test(password) ||
+    !/[0-9]/.test(password) ||
+    !/[!-/:-@[-`{-~]/.test(password)
+  ) {
+    throw new Error(
+      'Mật khẩu phải có chữ hoa (A–Z), chữ thường (a–z), ' +
+      'chữ số (0–9) và ít nhất một ký tự đặc biệt.'
+    );
   }
 }
 

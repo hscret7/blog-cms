@@ -1,3 +1,4 @@
+const activity = require('./activity-service');
 const pool = require('../config/database');
 const repository = require('../repositories/post-repository');
 const { validatePostId } = require('../validators/post-validator');
@@ -93,7 +94,7 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     transactionStarted = true;
 
     const [actors] = await connection.execute(
-      `SELECT id, role, status
+      `SELECT id, role, status, session_version
        FROM users
        WHERE id = ?
        FOR UPDATE`,
@@ -105,7 +106,8 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     if (
       !currentUser ||
       currentUser.status !== 'ACTIVE' ||
-      !['ADMIN', 'AUTHOR'].includes(currentUser.role)
+      !['ADMIN', 'AUTHOR'].includes(currentUser.role) ||
+      (currentUser.session_version ?? 0) !== (user.session_version ?? 0)
     ) {
       await connection.rollback();
       transactionStarted = false;
@@ -148,6 +150,8 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
         connection
       );
     } else if (operation === 'delete') {
+      await connection.execute('DELETE FROM comments WHERE post_id = ? AND parent_id IS NOT NULL', [post.id]);
+      await connection.execute('DELETE FROM comments WHERE post_id = ?', [post.id]);
       const affectedRows = await repository.remove(
         post.id,
         currentUser,
@@ -160,6 +164,8 @@ async function mutateCover(idParam, user, operation, inputBuffer) {
     } else {
       throw new Error('Thao tác ảnh không hợp lệ.');
     }
+
+    await activity.record(connection, currentUser.id, operation === 'delete' ? 'POST_DELETE' : operation === 'replace' ? 'COVER_REPLACE' : 'COVER_REMOVE', 'post', post.id);
 
     commitAttempted = true;
     await connection.commit();

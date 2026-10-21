@@ -1,0 +1,6 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yêu cầu quyền tác giả | Blog CMS</title><link rel="stylesheet" href="/css/site.css?v=4"></head><body><%- include('../partials/header') %><main id="main-content" class="account-form-page"><h1>Trở thành tác giả</h1>
+<% if(typeof errorMessage!=='undefined' && errorMessage) { %><p role="alert"><%= errorMessage %></p><% } %>
+<p>Quyền hiện tại: <%= user.role %>. Quản trị viên xét duyệt trước khi bạn được đăng bài.</p>
+<% if(request) { %><section class="comment-card"><h2><%= {PENDING:'Đang chờ duyệt',APPROVED:'Đã được duyệt',REJECTED:'Bị từ chối'}[request.status] %></h2><p><%= request.reason %></p><% if(request.review_note) { %><p>Lời nhắn quản trị viên: <%= request.review_note %></p><% } %></section><% } %>
+<% if(user.role==='READER'&&request?.status!=='PENDING') { %><form class="form-panel" method="post" action="/account/author-request"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="reason">Bạn muốn viết về chủ đề gì? (tối đa 1.000 ký tự)</label><textarea id="reason" name="reason" required><%= typeof formReason!=='undefined'?formReason:'' %></textarea><button>Gửi yêu cầu</button></form><% } %>
+</main><%- include('../partials/footer') %></body></html>

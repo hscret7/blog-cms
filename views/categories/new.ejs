@@ -4,16 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Thêm danh mục mới | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
+
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Thêm danh mục mới</h1>
 
     <% if (errorMessage) { %>
-      <p role="alert" style="color: red;"><%= errorMessage %></p>
+      <p role="alert" ><%= errorMessage %></p>
     <% } %>
 
-    <form action="/admin/categories" method="post">
+    <form class="form-panel" action="/admin/categories" method="post">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
       <p>
@@ -27,7 +30,7 @@
           required
         >
         <% if (errors.name) { %>
-          <br><small role="alert" style="color: red;"><%= errors.name %></small>
+          <br><small role="alert" ><%= errors.name %></small>
         <% } %>
       </p>
 
@@ -42,7 +45,7 @@
           required
         >
         <% if (errors.slug) { %>
-          <br><small role="alert" style="color: red;"><%= errors.slug %></small>
+          <br><small role="alert" ><%= errors.slug %></small>
         <% } %>
       </p>
 
@@ -56,7 +59,7 @@
           maxlength="500"
         ><%= formData.description %></textarea>
         <% if (errors.description) { %>
-          <br><small role="alert" style="color: red;"><%= errors.description %></small>
+          <br><small role="alert" ><%= errors.description %></small>
         <% } %>
       </p>
 
@@ -66,5 +69,6 @@
       </p>
     </form>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

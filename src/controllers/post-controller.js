@@ -1,3 +1,4 @@
+const { setFeedback } = require('../middlewares/ui-context');
 const postService = require('../services/post-service');
 const categoryRepository = require('../repositories/category-repository');
 const { getCsrfToken } = require('../middlewares/csrf');
@@ -20,20 +21,8 @@ function getFormData(body) {
 }
 
 async function listPosts(req, res) {
-  const result = await postService.getPostPage(
-    req.user,
-    req.query.page
-  );
-
-  if (!result.success) {
-    return renderError(res, result);
-  }
-
-  return res.render('posts/index', {
-    user: req.user,
-    csrfToken: getCsrfToken(req),
-    ...result.data
-  });
+  const data = await require('../services/list-service').getPage('posts', req.user, req.query);
+  return res.render('posts/index', { user: req.user, csrfToken: getCsrfToken(req), ...data, posts: data.rows });
 }
 
 async function showCreateForm(req, res) {
@@ -65,6 +54,7 @@ async function createPost(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -132,6 +122,7 @@ async function updatePost(req, res) {
     });
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -145,6 +136,7 @@ async function publishPost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -158,6 +150,7 @@ async function unpublishPost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 
@@ -171,6 +164,7 @@ async function deletePost(req, res) {
     return renderError(res, result);
   }
 
+  setFeedback(req, 'Đã lưu thao tác bài viết.', req.path === '/manage/posts' || req.path.endsWith('/update') ? req.path : null);
   return res.redirect(303, '/manage/posts');
 }
 

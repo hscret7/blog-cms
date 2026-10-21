@@ -1,0 +1,13 @@
+const test=require('node:test'),assert=require('node:assert/strict'),path=require('node:path');
+const admin={id:3,name:'Admin',email:'admin@example.invalid',role:'ADMIN',status:'ACTIVE',email_verified_at:new Date(),session_version:0,has_password:1};
+const queries=[];
+const pool={async execute(sql){queries.push(sql);if(/ORDER BY id\s/.test(sql)&&/JOIN/.test(sql))throw new Error('ambiguous id');if(/COUNT\(/.test(sql))return [[{total:1}]];if(/FROM users\s+WHERE/.test(sql))return [[admin]];if(/user_identities|author_requests/.test(sql))return [[]];if(/SELECT DISTINCT/.test(sql))return [[]];if(/FROM notifications/.test(sql))return [[{id:1,message:'Thông báo',target_path:'/account',read_at:null,created_at:new Date()}]];if(/FROM audit_events/.test(sql))return [[{id:1,action:'LOGIN',object_type:'user',object_id:3,name:'Admin',created_at:new Date()}]];if(/FROM comments/.test(sql))return [[{id:7,parent_id:null,title:'Bài thử',content:'Bình luận',status:'APPROVED',name:'Admin',slug:'bai-thu',created_at:new Date()}]];if(/FROM categories/.test(sql))return [[{id:1,name:'Công nghệ',slug:'cong-nghe',description:''}]];if(/FROM users p/.test(sql))return [[admin]];if(/FROM posts/.test(sql))return [[{id:5,title:'Bài thử',slug:'bai-thu',author_name:'Admin',category_name:'Công nghệ',status:'PUBLISHED',category_id:1,published_at:new Date()}]];throw Error('Unhandled SQL: '+sql);}};
+function stub(file,exports){const id=require.resolve(file);require.cache[id]={id,filename:id,loaded:true,exports};}
+stub('../src/config/database',pool);stub('../src/config/session',{sessionMiddleware(req,res,next){req.session={userId:3,authVersion:0};next();}});
+const app=require('../src/app');
+test('Mọi mục menu ADMIN chạy qua route, service và EJS thật với database fixture',async()=>{
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const base='http://127.0.0.1:'+server.address().port;for(const url of ['/','/manage/posts','/admin/categories','/admin/users','/admin/comments','/admin/author-requests','/admin/activity','/admin','/notifications','/account','/account/google','/my/comments','/following']){const res=await fetch(base+url);const html=await res.text();assert.equal(res.status,200,url+' '+html.slice(0,200));assert.match(html,/id="main-content"/,url);assert.doesNotMatch(html,/data-back|class="back-button"/,url);}
+ assert.ok(queries.some(sql=>/ORDER BY c\.id/.test(sql)));assert.ok(queries.some(sql=>/ORDER BY a\.id/.test(sql)));assert.ok(queries.some(sql=>/ORDER BY n\.id/.test(sql)));
+ }finally{await new Promise(r=>server.close(r));}
+});

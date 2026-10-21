@@ -27,3 +27,6 @@ coverage/
 Thumbs.db
 
 secrets/
+# Python helper cache
+__pycache__/
+*.py[cod]

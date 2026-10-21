@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tạo bài nháp | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
+
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Tạo bài nháp</h1>
     <p>Tác giả: <%= user.name %>.</p>
     <p>Bài mới được lưu ở trạng thái DRAFT, chưa hiển thị công khai.</p>
@@ -16,5 +19,6 @@
       submitLabel: 'Lưu bài nháp'
     }) %>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

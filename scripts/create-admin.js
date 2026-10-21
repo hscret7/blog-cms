@@ -55,7 +55,7 @@ async function main() {
     }
 
     const plainPassword = await password({
-      message: 'Mật khẩu ADMIN, từ 15 đến 128 ký tự:',
+      message: 'Mật khẩu ADMIN, 8–128 ký tự, đủ chữ hoa/thường/số/ký tự đặc biệt:',
       mask: '*',
       validate(value) {
         try {
@@ -85,8 +85,8 @@ async function main() {
     const passwordHash = await hashPassword(plainPassword);
 
     const [result] = await pool.execute(
-      `INSERT INTO users (name, email, password_hash, role, status)
-       VALUES (?, ?, ?, 'ADMIN', 'ACTIVE')`,
+      `INSERT INTO users (name, email, password_hash, role, status, email_verified_at)
+       VALUES (?, ?, ?, 'ADMIN', 'ACTIVE', UTC_TIMESTAMP())`,
       [name, email, passwordHash]
     );
 

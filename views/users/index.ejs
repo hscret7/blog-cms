@@ -4,13 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quản lý người dùng | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
+
 </head>
 <body>
-  <main>
+  <%- include('../partials/header') %>
+  <main id="main-content">
     <h1>Quản lý người dùng</h1>
+    <% if (typeof query !== 'undefined') { %><%- include('../partials/list-filters', { kind: 'users' }) %><% } %>
     <p>ADMIN đang đăng nhập: <%= user.name %>.</p>
 
-    <p>
+    <p class="page-actions">
       <a href="/admin/users/new">Thêm người dùng</a>
       |
       <a href="/admin">Về khu vực quản trị</a>
@@ -18,7 +22,8 @@
 
     <p>Có <%= users.length %> tài khoản.</p>
 
-    <table>
+    <div class="table-wrap" role="region" aria-label="Danh sách quản lý" tabindex="0">
+      <table>
       <thead>
         <tr>
           <th scope="col">ID</th>
@@ -74,12 +79,15 @@
         <% } %>
       </tbody>
     </table>
+      </div>
 
     <p>
       Khóa tài khoản giữ lại các bài viết của người dùng.
       Tài khoản bị khóa không được đăng nhập hoặc tiếp tục
       truy cập các trang yêu cầu xác thực.
     </p>
+    <% if (typeof page !== 'undefined') { %><%- include('../partials/pagination') %><% } %>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

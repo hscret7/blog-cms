@@ -4,35 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= post.title %> | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
 </head>
 <body>
-  <main>
-    <article>
+  <%- include('../partials/header') %>
+  <main id="main-content">
+    <article class="reader">
+      <a class="back-link" href="/">← Về trang chủ</a>
+      <div class="category-label"><a href="/?category_id=<%= post.category_id %>"><%= post.category_name %></a></div>
       <h1><%= post.title %></h1>
-
-      <p>Tác giả: <%= post.author_name %></p>
-
-      <p>
-        Danh mục:
-        <a href="/?category_id=<%= post.category_id %>">
-          <%= post.category_name %>
-        </a>
-      </p>
-
-      <p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p>
-      <% if (post.cover_path) { %>
-        <p>
-          <img
-            src="/media/posts/<%= post.id %>/cover"
-            alt="Ảnh đại diện: <%= post.title %>"
-            style="max-width: 100%; width: 960px; height: auto;"
-          >
-        </p>
-      <% } %>
-      <div style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= post.content %></div>
+      <div class="reader-meta"><p>Tác giả: <strong><%= post.author_name %></strong></p><p>Xuất bản: <%= publishedAtText %> — giờ Việt Nam</p></div>
+      <% if (post.cover_path) { %><img class="reader-cover" src="/media/posts/<%= post.id %>/cover" alt="Ảnh đại diện: <%= post.title %>"><% } %>
+      <div class="post-content"><%= post.content %></div>
+      <p><a class="button button-secondary" href="/following">Theo dõi chủ đề</a></p>
+      <section class="comments-section" aria-labelledby="comments-heading">
+        <h2 id="comments-heading">Bình luận (<%= commentPage.total %>)</h2>
+        <form method="get"><label for="comment-sort">Thứ tự bình luận</label><select id="comment-sort" name="sort"><option value="newest" <%= commentPage.filters.sort==='newest'?'selected':'' %>>Mới nhất</option><option value="oldest" <%= commentPage.filters.sort==='oldest'?'selected':'' %>>Cũ nhất</option></select><button>Xem</button></form>
+        <% commentPage.rows.forEach(comment=>{ %><%- include('../partials/comment',{comment}) %><% }); %>
+        <% if(!commentPage.rows.length) { %><p>Chưa có bình luận được duyệt.</p><% } %>
+        <nav class="pagination" aria-label="Phân trang bình luận">
+          <% if(commentPage.filters.page>1) { %><a href="?sort=<%= commentPage.filters.sort %>&page=<%= commentPage.filters.page-1 %>#comments-heading">Trang trước</a><% } %>
+          <p>Trang <%= commentPage.filters.page %> / <%= commentPage.totalPages %></p>
+          <% if(commentPage.filters.page<commentPage.totalPages) { %><a href="?sort=<%= commentPage.filters.sort %>&page=<%= commentPage.filters.page+1 %>#comments-heading">Trang sau</a><% } %>
+        </nav>
+        <% if(typeof currentUser!=='undefined' && currentUser) { %>
+          <% if(currentUser.email_verified_at) { %><form method="post" action="/posts/<%= post.id %>/comments"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><label for="comment-content">Bình luận của bạn (tối đa 2.000 ký tự)</label><textarea id="comment-content" name="content" required></textarea><button>Gửi bình luận</button><p><%= currentUser.role==='ADMIN'||(currentUser.role==='AUTHOR'&&currentUser.id===post.author_id)?'Bình luận của bạn được hiển thị ngay.':'Bình luận của bạn cần quản trị viên duyệt.' %></p></form>
+          <% } else { %><p><a href="/account">Xác minh email</a> trước khi bình luận.</p><% } %>
+        <% } else { %><p><a href="/login">Đăng nhập</a> hoặc <a href="/register">đăng ký</a> để bình luận.</p><% } %>
+      </section>
     </article>
-
-    <p><a href="/">Về trang chủ</a></p>
   </main>
+  <%- include('../partials/footer') %>
 </body>
 </html>

@@ -4,46 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đăng nhập | Blog CMS</title>
+  <link rel="stylesheet" href="/css/site.css?v=4">
+
 </head>
 <body>
-  <main>
-    <h1>Đăng nhập Blog CMS</h1>
-
-    <% if (errorMessage) { %>
-      <p role="alert"><%= errorMessage %></p>
-    <% } %>
-
-    <form action="/login" method="post">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-      <p>
-        <label for="email">Email</label><br>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autocomplete="username"
-          maxlength="254"
-          value="<%= email %>"
-          required
-        >
-      </p>
-
-      <p>
-        <label for="password">Mật khẩu</label><br>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        >
-      </p>
-
-      <button type="submit">Đăng nhập</button>
-    </form>
-
-    <p><a href="/">Về trang chủ</a></p>
+  <%- include('partials/header') %>
+  <main id="main-content">
+    <div class="auth-layout">
+      <section class="auth-intro"><span class="eyebrow">Không gian của bạn</span><h1>Đọc, viết và<br>cùng chia sẻ.</h1><p>Đăng nhập để viết bài, quản lý nội dung và mang câu chuyện của bạn đến với người đọc.</p><a class="back-link" href="/">← Khám phá blog</a></section>
+      <section class="auth-card" aria-labelledby="login-heading">
+        <h2 id="login-heading">Chào mừng trở lại</h2><p>Đăng nhập để tiếp tục câu chuyện của bạn.</p>
+        <% if (errorMessage) { %><p role="alert"><%= errorMessage %></p><% } %>
+        <form action="/login" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <p><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" maxlength="254" value="<%= email %>" required></p>
+          <p><label for="password">Mật khẩu</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" class="password-toggle" data-toggle-password="password" aria-controls="password" aria-pressed="false">Hiện mật khẩu</button></p>
+          <button type="submit">Đăng nhập →</button>
+        </form>
+        <p><a class="button button-secondary" href="/auth/google">Tiếp tục với Google</a></p>
+        <p class="auth-links"><a href="/forgot-password">Quên mật khẩu?</a><a href="/register">Tạo tài khoản</a></p>
+      </section>
+    </div>
   </main>
+  <%- include('partials/footer') %>
 </body>
 </html>

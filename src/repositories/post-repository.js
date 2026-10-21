@@ -90,10 +90,10 @@ async function findByIdForUser(id, user) {
   return rows[0] || null;
 }
 
-async function createDraft(user, { title, slug, content, category_id }) {
+async function createDraft(user, { title, slug, content, category_id }, executor = pool) {
   validateActor(user);
 
-  const [result] = await pool.execute(
+  const [result] = await executor.execute(
     `INSERT INTO posts (
        author_id,
        category_id,
@@ -113,11 +113,12 @@ async function createDraft(user, { title, slug, content, category_id }) {
 async function updateContent(
   id,
   user,
-  { title, slug, content, category_id }
+  { title, slug, content, category_id },
+  executor = pool
 ) {
   validateActor(user);
 
-  const [result] = await pool.execute(
+  const [result] = await executor.execute(
     `UPDATE posts
      SET title = ?,
          slug = ?,
@@ -139,10 +140,10 @@ async function updateContent(
   return result.affectedRows;
 }
 
-async function publish(id, user) {
+async function publish(id, user, executor = pool) {
   validateActor(user);
 
-  const [result] = await pool.execute(
+  const [result] = await executor.execute(
     `UPDATE posts
      SET status = 'PUBLISHED',
          published_at = UTC_TIMESTAMP()
@@ -155,10 +156,10 @@ async function publish(id, user) {
   return result.affectedRows;
 }
 
-async function unpublish(id, user) {
+async function unpublish(id, user, executor = pool) {
   validateActor(user);
 
-  const [result] = await pool.execute(
+  const [result] = await executor.execute(
     `UPDATE posts
      SET status = 'DRAFT',
          published_at = NULL

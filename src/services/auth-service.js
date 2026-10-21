@@ -27,7 +27,7 @@ async function authenticate(email, password) {
   if (
     normalizedEmail.length > 254 ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
-    passwordLength < 15 ||
+    passwordLength < 8 ||
     passwordLength > 128
   ) {
     return null;
@@ -36,7 +36,7 @@ async function authenticate(email, password) {
   const user = await findByEmail(normalizedEmail);
 
   const hash = user
-    ? user.password_hash
+    ? (user.password_hash || await getDummyHash())
     : await getDummyHash();
 
   const passwordMatches = await verifyPassword(hash, password);
@@ -45,7 +45,7 @@ async function authenticate(email, password) {
     !user ||
     !passwordMatches ||
     user.status !== 'ACTIVE' ||
-    !['ADMIN', 'AUTHOR'].includes(user.role)
+    !['ADMIN', 'AUTHOR', 'READER'].includes(user.role)
   ) {
     return null;
   }
@@ -55,7 +55,9 @@ async function authenticate(email, password) {
     name: user.name,
     email: user.email,
     role: user.role,
-    status: user.status
+    status: user.status,
+    email_verified_at: user.email_verified_at,
+    session_version: user.session_version
   };
 }
 

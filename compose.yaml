@@ -19,6 +19,14 @@ services:
       MYSQL_USER: ${MYSQL_USER:?Chua_dat_MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Chua_dat_MYSQL_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET:?Chua_dat_SESSION_SECRET}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:18090}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
 
     expose:
       - "3000"
@@ -255,6 +263,92 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  loki:
+    image: grafana/loki:3.6.17
+    restart: unless-stopped
+    user: "10001:10001"
+    command:
+      - -config.file=/etc/loki/loki.yml
+    ports:
+      - "127.0.0.1:${LOKI_HOST_PORT:-13100}:3100"
+    volumes:
+      - loki_data:/loki
+      - type: bind
+        source: ./infra/loki/loki.yml
+        target: /etc/loki/loki.yml
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - monitoring
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/loki
+        - -health
+        - -health.url=http://127.0.0.1:3100/ready
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  promtail:
+    image: grafana/promtail:3.5.11
+    restart: unless-stopped
+    # Host Docker log files are root-owned. No Docker socket or capabilities.
+    user: "0:0"
+    command:
+      - -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - promtail_positions:/positions
+      - type: bind
+        source: ./infra/promtail/promtail.yml
+        target: /etc/promtail/promtail.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./runtime/promtail-targets
+        target: /etc/promtail/targets
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${DOCKER_LOG_ROOT:-/var/lib/docker/containers}
+        target: /var/log/docker
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - monitoring
+    depends_on:
+      loki:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   prometheus:
     image: prom/prometheus:v3.15.0
     restart: unless-stopped
@@ -371,6 +465,8 @@ volumes:
   mysql_data:
   prometheus_data:
   grafana_data:
+  loki_data:
+  promtail_positions:
 
 networks:
   database:

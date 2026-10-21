@@ -1,0 +1,10 @@
+const express=require('express');
+const {requireAuth,requireRole,requireVerified}=require('../middlewares/auth');
+const {requireCsrf}=require('../middlewares/csrf');
+const controller=require('../controllers/author-request-controller');
+const router=express.Router(),parse=express.urlencoded({extended:false,limit:'12kb',parameterLimit:5});
+router.get('/account/author-request',requireAuth,controller.mine);
+router.post('/account/author-request',requireAuth,requireVerified,requireRole('READER'),parse,requireCsrf,controller.submit);
+router.get('/admin/author-requests',requireAuth,requireRole('ADMIN'),controller.list);
+router.post('/admin/author-requests/:id/review',requireAuth,requireVerified,requireRole('ADMIN'),parse,requireCsrf,controller.review);
+module.exports=router;

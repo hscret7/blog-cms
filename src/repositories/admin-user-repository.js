@@ -24,8 +24,8 @@ async function findById(id, executor = pool) {
 
 async function create(data, passwordHash, executor = pool) {
   const [result] = await executor.execute(
-    `INSERT INTO users (name, email, password_hash, role, status)
-     VALUES (?, ?, ?, ?, 'ACTIVE')`,
+    `INSERT INTO users (name, email, password_hash, role, status, email_verified_at)
+     VALUES (?, ?, ?, ?, 'ACTIVE', UTC_TIMESTAMP())`,
     [data.name, data.email, passwordHash, data.role]
   );
 
@@ -33,11 +33,16 @@ async function create(data, passwordHash, executor = pool) {
 }
 
 async function update(id, data, executor = pool) {
+  await executor.execute(
+    `UPDATE account_tokens t JOIN users u ON u.id = t.user_id
+     SET t.used_at = UTC_TIMESTAMP() WHERE u.id = ? AND u.email <> ? AND t.used_at IS NULL`,
+    [id, data.email]
+  );
   const [result] = await executor.execute(
     `UPDATE users
-     SET name = ?, email = ?, role = ?
+     SET name = ?, email_verified_at = IF(email = ?, email_verified_at, NULL), session_version = session_version + IF(email = ? AND role = ?, 0, 1), email = ?, role = ?
      WHERE id = ?`,
-    [data.name, data.email, data.role, id]
+    [data.name, data.email, data.email, data.role, data.email, data.role, id]
   );
 
   return result.affectedRows;
@@ -50,9 +55,9 @@ async function setStatus(id, status, executor = pool) {
 
   const [result] = await executor.execute(
     `UPDATE users
-     SET status = ?
+     SET session_version = session_version + IF(status <> ? AND ? = 'LOCKED', 1, 0), status = ?
      WHERE id = ?`,
-    [status, id]
+    [status, status, status, id]
   );
 
   return result.affectedRows;
@@ -60,7 +65,7 @@ async function setStatus(id, status, executor = pool) {
 
 async function lockUsersForAdministration(connection) {
   const [rows] = await connection.execute(
-    `SELECT id, role, status
+    `SELECT id, role, status, session_version
      FROM users
      ORDER BY id
      FOR UPDATE`
