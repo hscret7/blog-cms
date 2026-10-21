@@ -1,5 +1,3 @@
-const http = require('node:http');
-
 const ALLOWED_SERVICES = ['app', 'nginx', 'mysql', 'phpmyadmin'];
 const ALLOWED_INTERVALS = ['15m', '1h', '6h', '24h', '7d'];
 const ALLOWED_ERROR_GROUPS = ['', 'all', '5xx', '4xx', 'db_error', 'connection'];
@@ -25,7 +23,7 @@ function sanitizeParams(raw = {}) {
 
   let limit = 100;
   if (raw.limit !== undefined && raw.limit !== null && raw.limit !== '') {
-    const parsedLimit = Number.parseInt(String(raw.limit), 10);
+    const parsedLimit = Number(raw.limit);
     if (Number.isInteger(parsedLimit) && parsedLimit >= 10 && parsedLimit <= 500) {
       limit = parsedLimit;
     }
@@ -36,7 +34,7 @@ function sanitizeParams(raw = {}) {
 
 function buildLogQL({ service, errorGroup, keyword }) {
   let streamSelector;
-  if (service) {
+  if (ALLOWED_SERVICES.includes(service)) {
     streamSelector = `{project="blog-cms",service="${service}"}`;
   } else {
     streamSelector = '{project="blog-cms",service=~"app|nginx|mysql|phpmyadmin"}';
@@ -45,11 +43,11 @@ function buildLogQL({ service, errorGroup, keyword }) {
   const pipeline = [];
 
   if (errorGroup === '5xx') {
-    pipeline.push('| json | __error__="" | status >= 500');
+    pipeline.push('| json | __error__="" | status >= 500 and status < 600');
   } else if (errorGroup === '4xx') {
     pipeline.push('| json | __error__="" | status >= 400 and status < 500');
   } else if (errorGroup === 'all') {
-    pipeline.push('| json | __error__="" | status >= 400');
+    pipeline.push('| json | __error__="" | status >= 400 and status < 600');
   } else if (errorGroup === 'db_error') {
     pipeline.push('|= "ERROR"');
   } else if (errorGroup === 'connection') {
@@ -149,22 +147,44 @@ function createTechnicalLogService({ lokiUrl = process.env.LOKI_URL || 'http://l
           headers: { Accept: 'application/json' }
         });
 
-        clearTimeout(timer);
-
         if (!response.ok) {
-          const text = await response.text();
+          await response.body?.cancel();
           return {
             success: false,
             status: 502,
-            message: 'Loki từ chối truy vấn log: ' + (text.slice(0, 200) || response.statusText),
+            message: 'Hệ thống nhật ký từ chối truy vấn. Vui lòng thử lại hoặc kiểm tra Loki.',
             entries: [],
             params: sanitized,
             query: logql
           };
         }
 
-        const json = await response.json();
-        const resultStreams = json.data?.result || [];
+        // Keep the deadline active until the entire bounded response is read.
+        const reader = response.body.getReader();
+        const chunks = [];
+        let size = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > 2 * 1024 * 1024) {
+            await reader.cancel();
+            throw new Error('INVALID_LOKI_RESPONSE');
+          }
+          chunks.push(Buffer.from(value));
+        }
+        const json = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if (json.status !== 'success' || json.data?.resultType !== 'streams' ||
+            !Array.isArray(json.data.result)) {
+          throw new Error('INVALID_LOKI_RESPONSE');
+        }
+        const resultStreams = json.data.result;
+        if (resultStreams.some(item => !item || !Array.isArray(item.values) ||
+            item.values.some(value => !Array.isArray(value) || value.length !== 2 ||
+              typeof value[0] !== 'string' || !/^\d{1,19}$/.test(value[0]) ||
+              typeof value[1] !== 'string'))) {
+          throw new Error('INVALID_LOKI_RESPONSE');
+        }
         const entries = parseLokiStreams(resultStreams);
 
         return {
@@ -177,17 +197,19 @@ function createTechnicalLogService({ lokiUrl = process.env.LOKI_URL || 'http://l
         };
       } catch (err) {
         clearTimeout(timer);
-        const isTimeout = err.name === 'AbortError';
+        const isTimeout = controller.signal.aborted;
         return {
           success: false,
-          status: 504,
+          status: isTimeout ? 504 : 502,
           message: isTimeout
             ? 'Hết thời gian chờ kết nối Loki. Vui lòng thử lại với khoảng thời gian hoặc số dòng nhỏ hơn.'
-            : 'Không thể kết nối đến hệ thống nhật ký Loki (' + (err.code || err.message) + ').',
+            : 'Không thể đọc dữ liệu hợp lệ từ hệ thống nhật ký Loki. Vui lòng kiểm tra dịch vụ và thử lại.',
           entries: [],
           params: sanitized,
           query: logql
         };
+      } finally {
+        clearTimeout(timer);
       }
     }
   };

@@ -44,12 +44,12 @@
       <p>
         <label for="errorGroup">Nhóm lỗi</label>
         <select id="errorGroup" name="errorGroup">
-          <option value="" <%= !params.errorGroup ? 'selected' : '' %>>Tất cả mức độ</option>
+          <option value="" <%= !params.errorGroup ? 'selected' : '' %>>Không lọc nội dung</option>
           <option value="all" <%= params.errorGroup === 'all' ? 'selected' : '' %>>Lỗi HTTP chung (status &ge; 400)</option>
           <option value="5xx" <%= params.errorGroup === '5xx' ? 'selected' : '' %>>Lỗi máy chủ (HTTP 5xx)</option>
           <option value="4xx" <%= params.errorGroup === '4xx' ? 'selected' : '' %>>Lỗi client (HTTP 4xx)</option>
-          <option value="db_error" <%= params.errorGroup === 'db_error' ? 'selected' : '' %>>Lỗi Database (ERROR)</option>
-          <option value="connection" <%= params.errorGroup === 'connection' ? 'selected' : '' %>>Lỗi kết nối (ECONNREFUSED)</option>
+          <option value="db_error" <%= params.errorGroup === 'db_error' ? 'selected' : '' %>>Dòng chứa ERROR</option>
+          <option value="connection" <%= params.errorGroup === 'connection' ? 'selected' : '' %>>Dòng chứa ECONNREFUSED</option>
         </select>
       </p>
 

@@ -1,828 +1,620 @@
-> Bản đang phát triển nằm trên nhánh `codex/cms-ui-navigation`; PR #1 chưa merge `main`.
-> Bản trả lời tiếp vào mọi câu trả lời cần **migration 006 đúng một lần**, sau khi sao lưu và dừng app. Database hiện tại đã có 001–005: không chạy lại các migration đó. Xem [hướng dẫn cập nhật trả lời](docs/tra-loi-tiep.md).
-> Quy tắc bình luận và thông báo hiện tại: [docs/thong-bao-binh-luan.md](docs/thong-bao-binh-luan.md).
+# Hệ Thống Blog CMS
 
-# Hệ thống Blog CMS
+**Đề tài thực hành số 07: Hệ Thống Blog CMS**
 
-Cài trên máy mới: [hướng dẫn đầy đủ từ database rỗng](docs/cai-moi.md).
-Kết quả rà soát trước báo cáo: [docs/ra-soat-du-an.md](docs/ra-soat-du-an.md).
+**Môn học:** Triển khai và Quản trị Hệ thống Phần mềm (K23)
 
-> Cài mới xem `docs/cai-moi.md`. Các tài liệu cập nhật 003/004/005 mô tả từng mốc lịch sử, không phải lệnh phải chạy lại mỗi lần pull.
-> `docs/ra-soat-du-an.md` là bản rà soát kỹ thuật, không phải báo cáo nộp môn.
+**Sinh viên thực hiện:** Lê Thị Minh Huê - **MSV:** DTC245220026
 
+**Chuyên ngành:** An toàn thông tin
 
-Đề tài số 7 môn Triển khai và Quản trị Hệ thống Phần mềm.
+**Đơn vị:** Khoa Công nghệ Thông tin - Trường Đại học Công nghệ Thông tin & Truyền thông (ICTU)
 
-## Mục tiêu
+> README được đồng bộ với nhánh `feature/ui-refresh-technical-logs`, dựa trên
+> commit `34852a9`, ngày 21/10/2026. Nhánh này chưa gộp vào `main`.
+> Cài mới xem [hướng dẫn từ database rỗng](docs/cai-moi.md); nâng cấp trả lời tiếp
+> cần [migration 006](docs/tra-loi-tiep.md) đúng một lần, không chạy lại 001–005.
 
-Triển khai website Blog / CMS quản lý bài viết, danh mục và người dùng,
-sử dụng MySQL và phpMyAdmin.
+## Mục lục
 
-Mục tiêu cuối cùng là triển khai toàn bộ dịch vụ bằng Docker Compose.
+1. [Giới thiệu và chức năng](#1-giới-thiệu-và-chức-năng)
+2. [Ngăn Xếp Công Nghệ (Technology Stack)](#2-ngăn-xếp-công-nghệ-technology-stack)
+3. [Bảng Phân Bổ Cổng Dịch Vụ Thực Tế (Port Allocation)](#3-bảng-phân-bổ-cổng-dịch-vụ-thực-tế-port-allocation)
+4. [Kiến trúc và cấu trúc mã nguồn](#4-kiến-trúc-và-cấu-trúc-mã-nguồn)
+5. [Cài đặt mới và quản lý migration](#5-cài-đặt-mới-và-quản-lý-migration)
+6. [Cập nhật và vận hành](#6-cập-nhật-và-vận-hành)
+7. [Tài khoản, email và đăng nhập Google](#7-tài-khoản-email-và-đăng-nhập-google)
+8. [Kiểm thử và nghiệm thu](#8-kiểm-thử-và-nghiệm-thu)
+9. [Giám sát Prometheus và Grafana](#9-giám-sát-prometheus-và-grafana)
+10. [Log tập trung và ba truy vấn LogQL](#10-log-tập-trung-và-ba-truy-vấn-logql)
+11. [Bảo mật và hardening](#11-bảo-mật-và-hardening)
+12. [Dữ liệu, sao lưu và dừng an toàn](#12-dữ-liệu-sao-lưu-và-dừng-an-toàn)
+13. [Xử lý sự cố thường gặp](#13-xử-lý-sự-cố-thường-gặp)
+14. [Hiện trạng, giới hạn và tài liệu](#14-hiện-trạng-giới-hạn-và-tài-liệu)
 
-## Phạm vi ứng dụng dự kiến
+## 1. Giới thiệu và chức năng
 
-- Xem danh sách và chi tiết bài đã xuất bản.
-- Tìm kiếm, lọc danh mục và phân trang.
-- Đăng nhập, đăng xuất và phân quyền.
-- Quản lý bài viết với trạng thái nháp và đã xuất bản.
-- Quản lý danh mục và người dùng.
-- Quản lý ảnh đại diện bài viết.
+Blog CMS quản lý và xuất bản bài viết, tích hợp MySQL/phpMyAdmin, Nginx reverse
+proxy, giám sát Prometheus/Grafana và log tập trung Loki/Promtail.
+Stack triển khai có **11 service Docker Compose**. Express dùng EJS để render
+HTML phía server, CSS và JavaScript nội bộ hỗ trợ giao diện responsive.
 
-## Yêu cầu triển khai
+| Đối tượng | Chức năng |
+|---|---|
+| Khách | Xem bài đã xuất bản; tìm tiêu đề/nội dung, lọc danh mục, sắp xếp, phân trang; đăng ký hoặc đăng nhập |
+| READER — độc giả | Hồ sơ, đổi/quên mật khẩu, xác minh email, bình luận/trả lời, quản lý bình luận của mình, theo dõi chủ đề và nhận thông báo; gửi yêu cầu làm tác giả |
+| AUTHOR — tác giả | Chức năng tài khoản/cộng đồng; tạo, sửa, xuất bản, chuyển nháp, xóa bài của mình; tải/thay/gỡ ảnh, xem lịch sử nội dung và bình luận trên bài mình |
+| ADMIN — quản trị viên | Quản lý bài toàn hệ thống, danh mục, người dùng, yêu cầu quyền tác giả, kiểm duyệt bình luận; Nhật ký hệ thống gồm nhật ký hoạt động và nhật ký kỹ thuật |
 
-- MySQL và phpMyAdmin.
-- Nginx reverse proxy với HTTPS tự ký hoặc security headers.
-- Prometheus và Grafana giám sát container, web server và database.
-- Loki và Promtail thu thập log tập trung.
-- Ít nhất 2–3 truy vấn LogQL có minh chứng.
-- Ít nhất 3–4 biện pháp hardening có kiểm chứng.
-- Báo cáo tối thiểu 10 trang và demo đầy đủ.
+### Bài viết và ảnh
 
-## Trạng thái
+- Bài mới là `DRAFT`, chưa có `published_at`; chỉ `PUBLISHED` xuất hiện công khai.
+- AUTHOR chỉ quản lý bài của mình; dữ liệu tác giả không lấy từ form do người dùng gửi.
+- Tìm kiếm tiêu đề/nội dung, lọc danh mục, sắp xếp mới/cũ/theo tiêu đề; công khai 10 bài/trang.
+- Nội dung bài được escape và hiển thị dạng văn bản, không phải HTML editor.
+- Ảnh nhận JPEG/PNG/WebP, tối đa 5 MiB và 20 triệu pixel; kiểm tra bằng Sharp,
+  từ chối ảnh động/nhiều trang, xoay theo EXIF và thu nhỏ trong khung 1600 × 1600,
+  không phóng lớn ảnh nhỏ; xuất WebP với tên UUID.
+- Ảnh đi qua `GET /media/posts/:id/cover`, không mở thư mục uploads bằng static.
+  Ảnh bài nháp chỉ ADMIN hoặc tác giả đang có phiên hợp lệ được xem.
+- Thay/gỡ ảnh và xóa bài dùng transaction; dọn ảnh cũ sau commit.
+  Database và filesystem không có chung transaction; lỗi dọn tệp được ghi nhận.
 
-Đã hoàn thành nền tảng ứng dụng, database, xác thực và phân quyền:
+### Bình luận và thông báo
 
-- Server Express với trang chủ tại `/`.
-- Endpoint `/health/live` kiểm tra khả năng phục vụ HTTP.
-- Endpoint `/health/ready` kiểm tra kết nối MySQL.
-- Đường dẫn không tồn tại trả HTTP 404.
-- MySQL và phpMyAdmin chạy bằng Docker Compose.
-- Ba bảng nghiệp vụ (`users`, `categories`, `posts`) và bảng `sessions`.
-- Express kết nối MySQL bằng connection pool.
-- Đã kiểm tra một số ràng buộc dữ liệu, Unicode và khả năng
-  kết nối lại khi MySQL hoạt động trở lại.
-- Xác thực tài khoản với mật khẩu băm Argon2id (kèm script tạo ADMIN và AUTHOR).
-- Quản lý phiên đăng nhập lưu trong MySQL qua express-mysql-session.
-- Bảo vệ chống tấn công CSRF cho đăng nhập và đăng xuất.
-- Phân quyền ADMIN, AUTHOR và READER; đăng ký công khai luôn là READER.
-- Giới hạn tần suất đăng nhập (rate limiting) cho `POST /login`.
-- Quản lý danh mục cho ADMIN (danh sách, tạo mới, sửa, xóa với khóa ngoại RESTRICT).
-- ADMIN có thể thêm, xem danh sách, sửa và xóa danh mục.
-- Đã kiểm thử CRUD danh mục, slug trùng, slug sai định dạng,
-  cập nhật không đổi nội dung và xử lý ID không hợp lệ.
-- Đã kiểm thử quyền truy cập danh mục và chặn POST thiếu CSRF
-  khi đang đăng nhập ADMIN.
-- Có danh sách quản lý bài viết tại `/manage/posts`.
-- ADMIN quản lý bài của mọi tác giả; AUTHOR chỉ quản lý bài của mình.
-- Đã triển khai tạo bài nháp và sửa nội dung.
-- Bài mới có trạng thái DRAFT và published_at bằng NULL.
-- Đã triển khai xuất bản, chuyển về nháp và xóa bài
-- Website công khai hiển thị danh sách và chi tiết bài đã xuất bản.
-- Tìm kiếm tiêu đề/nội dung, lọc danh mục, sắp xếp và phân trang 10 bài/trang.
-- Bài nháp không xuất hiện trên website công khai.
-- Nội dung bài viết hiển thị dưới dạng văn bản, được escape HTML.
-- ADMIN quản lý người dùng qua giao diện: danh sách, tạo tài khoản, sửa tên, email, vai trò và khóa/mở khóa.
-- Chặn tự khóa và tự hạ quyền tài khoản ADMIN đang đăng nhập.
-- Thay đổi vai trò và trạng thái được kiểm tra lại ở mỗi yêu cầu truy cập trang yêu cầu xác thực.
-- Đã triển khai ảnh đại diện bài viết: tải, thay, gỡ ảnh, hiển thị trên website công khai và dọn ảnh khi xóa bài.
-- Đã triển khai giám sát Nginx, MySQL và container bằng Prometheus, các exporter, cAdvisor và Grafana.
+- Có thể trả lời bình luận hoặc tiếp tục trả lời bất kỳ câu trả lời đã hiển thị nào.
+  Câu trả lời gom trong một cuộc trao đổi, ghi rõ đang trả lời ai.
+- Độc giả và AUTHOR bình luận trên bài người khác chờ duyệt; ADMIN và AUTHOR trên
+  bài mình được hiển thị ngay. Người bình luận phải xác minh email.
+- Bình luận gốc và câu trả lời phân trang 10 mục; trang bài xem nhanh 5 câu trả lời
+  mỗi nhóm. Không hiển thị nội dung chờ duyệt/đã ẩn cho người không có quyền.
+- Thông báo gửi đúng người được trả lời và tác giả bài, loại người gửi/trùng người nhận.
+  Mở bằng nút có CSRF sẽ đánh dấu đã đọc và dẫn đến đúng nội dung.
+- Có tìm kiếm/lọc, đã đọc/chưa đọc, xem/thu gọn, ẩn/khôi phục thông báo.
+  Thông báo trong website cập nhật khi tải trang; chưa có push thời gian thực.
+- Nhật ký hoạt động ghi thao tác nghiệp vụ; lịch sử bài lưu phiên bản nội dung để xem.
+  ADMIN mở menu **Nhật ký hệ thống** để chọn **Nhật ký hoạt động** (MySQL)
+  hoặc **Nhật ký kỹ thuật** (Loki) tại `/admin/system-logs`.
+  Trang kỹ thuật lọc dịch vụ/thời gian/nội dung, tối đa 500 dòng; timeout 8 giây
+  bao gồm đọc phản hồi, giới hạn phản hồi 2 MiB. Lỗi Loki trả 502/504 và thông báo
+  trên giao diện. Nội dung log được escape HTML nhưng không tự che mọi bí mật:
+  không ghi mật khẩu/token vào log, chỉ cấp quyền xem cho ADMIN.
 
-Đã triển khai Loki + Promtail, Grafana datasource/dashboard và ba query LogQL. Ngày 16/10/2026, sinh viên đã cung cấp kết quả Loki HTTP 200, request 404 đi qua Nginx → Promtail → Loki và cả ba query có dữ liệu. Ảnh minh chứng Grafana cần lưu cho báo cáo.
-Express, MySQL và phpMyAdmin đã chạy bằng Docker Compose.
-Đã triển khai Nginx reverse proxy với security headers.
-Website được truy cập qua Nginx; app không công bố cổng ra host.
-Hướng dẫn triển khai và minh chứng log tập trung: [docs/log-tap-trung.md](docs/log-tap-trung.md).
+## 2. Ngăn Xếp Công Nghệ (Technology Stack)
 
+Phiên bản dưới đây lấy từ `package.json`, `.nvmrc`, Dockerfile và `compose.yaml`;
+tag image có thể thay đổi nội dung nếu không khóa digest.
 
-### Kiểm thử quản lý danh mục
+| Lớp | Công nghệ / phiên bản trong repo | Vai trò |
+|---|---|---|
+| Runtime | Node.js 24; `.nvmrc` là 24.21.0; image `node:24-bookworm` và `node:24-bookworm-slim` | Build nhiều stage và chạy ứng dụng |
+| Backend | Express 5.3.0, CommonJS | Route, middleware, controller, service, repository |
+| Giao diện | EJS 7.0.1, HTML5, CSS3, Vanilla JavaScript | Render phía server, responsive, tương tác biểu mẫu |
+| Database | MySQL `8.4`; `mysql2` 3.24.5 | InnoDB, `utf8mb4_0900_ai_ci`, transaction/khóa hàng; thời gian UTC |
+| DB tool | `phpmyadmin:5.2.3-apache` | Quản trị MySQL |
+| Phiên và CSRF | express-session 1.19.0, express-mysql-session 3.0.3; token CSRF từ node:crypto | Session lưu MySQL, kiểm tra POST |
+| Mật khẩu | Argon2 0.45.1, thuật toán Argon2id | Băm/xác minh mật khẩu; thu hồi phiên bằng session_version |
+| Ảnh | Multer 2.4.0, Sharp 0.35.5 | Nhận, kiểm tra và chuyển ảnh WebP |
+| Email / Google | Nodemailer 10.1.0; google-auth-library 11.3.0, Google Identity Services | SMTP xác minh/khôi phục và đăng nhập/liên kết Google |
+| Rate limit | express-rate-limit 8.7.1 | Giới hạn đăng nhập, tài khoản và bình luận tại ứng dụng |
+| Reverse proxy | `nginx:stable-alpine` | Proxy, giới hạn body, security headers, access log JSON |
+| Metrics | Prometheus 3.15.0, Grafana 13.2.3 | Thu thập và hiển thị dashboard |
+| Exporter | nginx-prometheus-exporter 1.5.1, mysqld-exporter 0.20.0, cAdvisor 0.60.6 | Metrics web server, database và container |
+| Logging | Loki 3.6.17, Promtail 3.5.11, LogQL | Log tập trung, lưu filesystem, retention 7 ngày |
+| Hạ tầng | Docker Engine + Docker Compose v2, Git/GitHub | Đóng gói, mạng, volume và quản lý phiên bản |
 
-Đã kiểm thử thủ công:
-- Thêm, sửa và xóa danh mục chưa có bài viết.
-- Hiển thị và lưu dữ liệu tiếng Việt.
-- Từ chối slug trùng và slug sai định dạng.
-- Cập nhật không đổi nội dung vẫn thành công.
-- Hủy xác nhận xóa không làm mất danh mục.
-- ID sai định dạng trả HTTP 400; ID không tồn tại trả HTTP 404.
-- Người chưa đăng nhập được chuyển về trang đăng nhập.
-- AUTHOR bị từ chối truy cập quản lý danh mục với HTTP 403.
-- ADMIN gửi POST thiếu CSRF bị từ chối với HTTP 403.
+Môi trường đã dùng: Ubuntu 24.04 trên WSL, Docker 29.1.3, Compose 2.40.3.
+Mật khẩu dùng **Argon2id**, không phải Bcrypt; xác thực website dùng session,
+không phải JWT ứng dụng. Token Google được kiểm tra phía server bằng thư viện Google.
 
-Test tự động cho validation danh mục và giới hạn đăng nhập:
-10 mục PASS, 0 FAIL tại mốc validation ban đầu; số này không phải tổng test hiện tại.
+## 3. Bảng Phân Bổ Cổng Dịch Vụ Thực Tế (Port Allocation)
 
-Ca còn cần nghiệm thu riêng trên giao diện: xóa danh mục đang có bài viết phải bị chặn; không coi có khóa ngoại là bằng chứng đã chạy ca UI này.
+Đây là phân bổ trong Compose và `.env.example`, khớp các cổng đã dùng ở lab.
+`.env` thật có thể ghi đè các cổng có biến môi trường.
+Dùng `docker compose ps` để xác nhận mapping đang chạy trước khi chụp minh chứng.
 
-### Kiểm thử tạo và sửa bài nháp
+| Dịch vụ | URL / địa chỉ trên máy host | Bind host → cổng container | Chức năng |
+|---|---|---|---|
+| Website qua Nginx | http://localhost:18090/ | `127.0.0.1:18090 → 80` | Điểm vào website; không phải bind 0.0.0.0 |
+| phpMyAdmin | http://localhost:18091/ | `127.0.0.1:${PHPMYADMIN_HOST_PORT} → 80`; mẫu 18091 | Giao diện quản trị DB |
+| Grafana | http://localhost:13000/ | `127.0.0.1:13000 → 3000` | Dashboard metrics/log |
+| Prometheus | http://localhost:19090/ | `127.0.0.1:19090 → 9090` | Targets và PromQL |
+| Loki | http://localhost:13100/ready | `127.0.0.1:${LOKI_HOST_PORT:-13100} → 3100` | Readiness và API LogQL, không phải giao diện duyệt log |
+| MySQL | `127.0.0.1:13319` | `127.0.0.1:${MYSQL_HOST_PORT} → 3306`; mẫu 13319 | CLI/DB client; không phải URL HTTP |
+| App Express | Không publish ra host | Nội bộ `app:3000` | Backend sau Nginx |
+| Nginx stub_status | Không publish ra host | Nội bộ `nginx:8080/stub_status` | Exporter đọc thống kê Nginx |
+| Nginx exporter | Không publish ra host | Nội bộ `nginx-exporter:9113` | Metrics Nginx |
+| MySQL exporter | Không publish ra host | Nội bộ `mysql-exporter:9104` | Metrics MySQL |
+| cAdvisor | Không publish ra host | Nội bộ `cadvisor:8080` | Metrics container |
+| Promtail | Không publish ra host | Nội bộ `promtail:9080` | HTTP endpoint của collector |
 
-Đã kiểm chứng:
-- ADMIN và AUTHOR tạo bài nháp với tác giả đúng tài khoản đăng nhập.
-- Sửa nội dung và lưu không đổi nội dung thành công.
-- Slug trùng bị từ chối, không tạo thêm bài.
-- AUTHOR chỉ thấy bài của mình trong danh sách.
-- POST của AUTHOR nhằm sửa bài ADMIN bị từ chối với HTTP 404;
-  dữ liệu bài ADMIN không thay đổi.
-- ADMIN sửa bài AUTHOR nhưng không thay đổi tác giả.
-- POST tạo và sửa bài thiếu CSRF bị từ chối với HTTP 403.
-- Bộ test validation bài viết, danh mục và giới hạn đăng nhập:
-  17 mục PASS, 0 FAIL tại mốc tạo/sửa bài ban đầu.
+Express lắng nghe `0.0.0.0:3000` **bên trong container**, nhưng không có host port.
+Khi chạy Express trực tiếp trong WSL, nó dùng host 18090; không chạy đồng thời
+với Nginx Compose đang chiếm cổng đó. Bảng này không dùng cổng của dự án Quiz
+hoặc các stack WordPress/Grafana khác trên máy.
 
-Danh sách quản lý đã có mã phân trang; chưa kiểm chứng chuyển trang
-với dữ liệu trên 20 bài.
+## 4. Kiến trúc và cấu trúc mã nguồn
 
-### Xuất bản, chuyển về nháp và xóa bài
-
-Đã kiểm chứng thủ công:
-- AUTHOR xuất bản và chuyển bài của mình về nháp.
-- Xuất bản lặp không thay đổi thời điểm xuất bản.
-- Sửa nội dung bài đang xuất bản giữ nguyên published_at.
-- Chuyển về nháp đặt published_at bằng NULL.
-- Xuất bản lại ghi thời điểm mới.
-- AUTHOR không thể xuất bản, gỡ hoặc xóa bài ADMIN:
-  các yêu cầu bị từ chối với HTTP 404.
-- Ba thao tác thiếu CSRF bị từ chối với HTTP 403.
-- Hủy xác nhận xóa giữ lại bài; xác nhận xóa bài thử thành công.
-
-Bộ test tại mốc triển khai xuất bản ban đầu: 17 mục PASS, 0 FAIL.
-Các test này kiểm tra validation và giới hạn đăng nhập;
-nghiệp vụ xuất bản và xóa được kiểm thử thủ công.
-
-## Môi trường thực hiện
-
-- WSL Ubuntu 24.04.
-- Visual Studio Code kết nối WSL.
-- Docker Engine và Docker Compose.
-- Git.
-
-### Website công khai
-
-Không cần đăng nhập để truy cập:
-
-| Địa chỉ | Chức năng |
-| --- | --- |
-| `/` | Danh sách bài đã xuất bản |
-| `/posts/:slug` | Chi tiết bài đã xuất bản |
-
-Trang chủ hỗ trợ các tham số:
-
-- `q`: tìm kiếm theo tiêu đề và nội dung, tối đa 200 ký tự Unicode.
-- `category_id`: lọc theo ID danh mục.
-- `page`: số trang; mỗi trang hiển thị tối đa 10 bài.
-
-Bài viết được sắp xếp theo thời điểm xuất bản giảm dần,
-sau đó theo ID giảm dần.
-
-Các trường hợp đã kiểm tra thủ công:
-
-- Bài đã xuất bản trả HTTP 200; bài nháp trả HTTP 404.
-- Chuyển về nháp làm bài biến mất khỏi danh sách công khai.
-- Xuất bản lại cho phép truy cập chi tiết.
-- Tìm kiếm kết hợp lọc danh mục cho kết quả phù hợp.
-- Không có kết quả hiển thị danh sách rỗng.
-- Số trang sai định dạng trả HTTP 400.
-- Từ khóa `%` được tìm như ký tự thông thường.
-- Nội dung chứa thẻ HTML được hiển thị nguyên văn.
-- Với 11 bài, trang đầu có 10 bài và trang sau có 1 bài.
-- Chuyển trang giữ từ khóa tìm kiếm và bộ lọc danh mục.
-
-### Kiểm thử tự động
-
-Chạy toàn bộ các bộ kiểm thử từ thư mục gốc dự án:
-
-```bash
-node --test tests/*.test.js
+```mermaid
+flowchart TB
+    browser["Trình duyệt"] --> nginx["Nginx :80"]
+    nginx --> app["Express :3000"]
+    app --> mysql["MySQL :3306"]
+    pma["phpMyAdmin :80"] --> mysql
+    promtail["Promtail"] --> loki["Loki :3100"]
+    grafana["Grafana :3000"] --> loki
+    grafana --> prometheus["Prometheus :9090"]
 ```
 
-Kết quả kiểm tra mã hiện tại (16/10/2026): **153 test Node đạt, 0 thất bại**; thêm **8 test Python** bằng `python3 tests/log-targets.test.py`. Các ca database dùng fixture, không thay thế nghiệm thu MySQL thật.
+Prometheus scrape exporter Nginx/MySQL và cAdvisor. Promtail đọc Docker JSON log
+của app, Nginx, MySQL và phpMyAdmin; Grafana truy vấn Prometheus và Loki.
+App tham gia cả database, proxy và monitoring để truy vấn Loki từ trang quản trị.
 
-Các bộ kiểm thử kiểm tra validation, middleware giới hạn đăng nhập,
-xử lý ảnh và lưu tệp trong thư mục tạm. Chúng không thay thế
-kiểm thử nghiệp vụ với database và kiểm thử trên trình duyệt.
+| Đường dẫn | Nội dung |
+|---|---|
+| `src/config` | Biến môi trường, MySQL pool, session store |
+| `src/routes`, `middlewares` | Route, xác thực/phân quyền, CSRF, upload/rate limit |
+| `src/controllers`, `services`, `repositories`, `validators` | HTTP, nghiệp vụ, SQL và validation |
+| `views`, `public/css`, `public/js` | EJS, CSS và JavaScript giao diện |
+| `db/migrations` | SQL nâng schema tuần tự 001–006 |
+| `infra` | Nginx, Prometheus, Grafana, Loki và Promtail |
+| `scripts` | Tạo tài khoản, kiểm tra session và nguồn log |
+| `tests` | Bộ kiểm thử Node/Python |
+| `docs` | Hướng dẫn triển khai, thiết kế và nghiệm thu |
 
-Kiểm tra dependency:
+## 5. Cài đặt mới và quản lý migration
 
-```bash
-npm audit
-```
+### Điều kiện
 
-Kết quả lần kiểm tra gần nhất: không có lỗ hổng được npm audit báo cáo.
+- Docker Engine/Compose v2, Git, Node 24 qua nvm và Python 3.
+- Cổng ở mục 3 còn trống; subnet proxy `172.26.0.0/24` không trùng mạng khác.
+- Lab dùng Docker rootful, Docker Root Dir `/var/lib/docker`, cgroup v2 và
+  `/dev/kmsg` cho cAdvisor. Không mặc định áp dụng nguyên cấu hình cho rootless.
+- App/Grafana/MySQL exporter dùng UID/GID 1000; thư mục bind mount phải có quyền
+  phù hợp, không dùng `chmod 777`.
 
-### Quản lý người dùng (ADMIN)
-
-Các tuyến chức năng:
-
-| Phương thức | Địa chỉ | Chức năng |
-| --- | --- | --- |
-| GET | `/admin/users` | Danh sách người dùng |
-| GET | `/admin/users/new` | Biểu mẫu tạo tài khoản |
-| POST | `/admin/users` | Tạo tài khoản |
-| GET | `/admin/users/:id/edit` | Biểu mẫu sửa thông tin |
-| POST | `/admin/users/:id/update` | Sửa tên, email và vai trò |
-| POST | `/admin/users/:id/lock` | Khóa tài khoản |
-| POST | `/admin/users/:id/unlock` | Mở khóa tài khoản |
-
-Toàn bộ tuyến yêu cầu đăng nhập với vai trò ADMIN.
-Các thao tác POST yêu cầu CSRF token.
-
-Tài khoản mới có trạng thái ACTIVE; mật khẩu được băm bằng Argon2id.
-Biểu mẫu lỗi không điền lại mật khẩu.
-Danh sách và trang sửa không lấy hoặc hiển thị hash mật khẩu.
-
-Khóa tài khoản giữ lại người dùng và bài viết.
-Khóa tài khoản tăng `session_version`. Phiên cũ bị từ chối ở yêu cầu tiếp theo, kể cả ADMIN đã mở khóa trước yêu cầu đó. Đổi email/vai trò qua ADMIN cũng thu hồi phiên cũ. Middleware và transaction ghi kiểm tra phiên bản phiên.
-
-Các thao tác sửa vai trò và trạng thái sử dụng transaction,
-khóa hàng bằng SELECT ... FOR UPDATE và kiểm tra lại quyền
-của ADMIN thực hiện thao tác.
-
-Đã kiểm chứng:
-
-- Tạo tài khoản, lưu tên tiếng Việt và hash Argon2id.
-- Từ chối email trùng khi tạo và sửa với HTTP 409.
-- Sửa thông tin và lưu không đổi nội dung thành công.
-- Khóa, hủy xác nhận khóa, mở khóa và đăng nhập lại.
-- Vai trò được đọc lại từ database; bản sửa thu hồi phiên khi ADMIN đổi vai trò cần nghiệm thu đăng nhập lại trên máy sinh viên.
-- Chặn tự hạ quyền và tự khóa với HTTP 409.
-- ID sai định dạng trả HTTP 400; ID không tồn tại trả HTTP 404.
-- AUTHOR bị chặn truy cập và gửi thao tác quản trị với HTTP 403.
-- Các POST thiếu CSRF bị chặn với HTTP 403.
-- Trong một lần kiểm thử hai ADMIN tạm đồng thời khóa nhau,
-  chỉ một thao tác thành công; thao tác còn lại bị từ chối
-  sau khi kiểm tra lại quyền. Các tài khoản tạm đã được dọn.
-
-Có quy tắc giữ ít nhất một ADMIN hoạt động trong service.
-Chưa kiểm chứng riêng từng nhánh của quy tắc ADMIN cuối cùng.
-
-Chưa hỗ trợ xóa người dùng; tài khoản có biểu mẫu tự đổi mật khẩu qua giao diện.
-
-## Hướng dẫn chạy
-
-### Chạy ứng dụng bằng Docker Compose
-
-Cần có `.env` theo `.env.example`, với mật khẩu và SESSION_SECRET thật.
-Không đưa `.env` vào Git hoặc image.
-
-Ảnh được lưu bằng bind mount từ `./uploads` vào `/app/uploads`.
-Chuẩn bị thư mục nếu chưa có:
+### Clone đúng nhánh
 
 ```bash
-mkdir -p uploads/covers
-```
-
-Container app chạy UID/GID 1000. Thư mục ảnh phải cho tài khoản này
-đọc và ghi. Môi trường WSL đã kiểm chứng có UID/GID 1000.
-
-Kiểm tra cấu hình:
-
-```bash
-docker compose config --quiet
-```
-
-Build image:
-
-```bash
-docker build -t blog-cms-app:local .
-```
-
-Môi trường hiện tại sử dụng legacy builder, chưa có Buildx.
-Lệnh build trên đã được kiểm chứng.
-
-Nếu Express đang chạy trực tiếp trong WSL, dừng bằng Ctrl + C
-trước khi khởi động container vì cùng sử dụng cổng host 18090.
-
-Khởi động các dịch vụ bằng image đã build:
-
-```bash
-docker compose up -d --no-build --wait --wait-timeout 240
-```
-
-Truy cập website: http://localhost:18090
-Truy cập phpMyAdmin: http://localhost:18091
-
-Trong container, app kết nối MySQL tại `mysql:3306`.
-Khi chạy trực tiếp trong WSL, app dùng `127.0.0.1:13319`.
-
-Xem trạng thái và log:
-
-```bash
-docker compose ps
-docker compose logs --tail=30 app
-```
-
-Sau khi sửa mã ứng dụng, build lại image và cập nhật container:
-
-```bash
-docker build -t blog-cms-app:local .
-docker compose up -d --no-build --no-deps --wait --wait-timeout 240 app
-```
-
-Đã kiểm chứng:
-
-- App chạy trong Compose, liveness/readiness trả HTTP 200.
-- Argon2 và Sharp hoạt động trong runtime image.
-- Trang công khai, trang sửa bài và ảnh hiện có hoạt động.
-- Tải/thay ảnh được khi filesystem chính chỉ đọc.
-- Tên ảnh và SHA256 không đổi sau khi tạo lại container app.
-- App chạy non-root, UID 1000.
-- Root filesystem chỉ đọc; drop toàn bộ capability.
-- no-new-privileges có hiệu lực.
-- SIGTERM đóng tài nguyên và ứng dụng thoát với mã 0.
-
-MySQL dùng named volume; ảnh dùng bind mount.
-Dữ liệu được lưu ngoài container nhưng vẫn cần sao lưu riêng.
-
-Base image hiện dùng tag `node:24-bookworm` và
-`node:24-bookworm-slim`. Bản đã build được kiểm chứng chạy
-Node.js 24.21.0; các tag này có thể thay đổi theo thời gian.
-
-### Nginx reverse proxy
-
-Website: http://localhost:18090
-
-Nginx tiếp nhận cổng host 18090 và chuyển tiếp tới app:3000.
-App không công bố cổng ra host.
-
-Mạng triển khai:
-
-- proxy: Nginx và app, subnet 172.26.0.0/24.
-- database: app, MySQL và phpMyAdmin.
-- Nginx có IP cố định 172.26.0.10.
-- App chỉ tin IP này qua cấu hình TRUSTED_PROXY_IP.
-- Chạy trực tiếp trong WSL: để TRUSTED_PROXY_IP trống.
-
-Cấu hình Nginx: infra/nginx/default.conf.
-
-Nginx ghi đè X-Forwarded-For bằng địa chỉ kết nối thực
-và đặt X-Forwarded-Host, X-Forwarded-Proto.
-Ứng dụng không tự lấy IP từ header do khách gửi.
-
-Security headers:
-
-- X-Content-Type-Options: nosniff.
-- X-Frame-Options: DENY.
-- Referrer-Policy: strict-origin-when-cross-origin.
-- Permissions-Policy: camera=(), microphone=(), geolocation=().
-
-Headers áp dụng cả với phản hồi lỗi.
-Nginx nhận request body tối đa 6 MiB; ứng dụng vẫn giới hạn
-tệp ảnh tối đa 5 MiB.
-
-Kiểm tra cú pháp cấu hình:
-
-```bash
-docker compose exec nginx nginx -t
-```
-
-Sau khi sửa cấu hình và kiểm tra thành công, reload:
-
-```bash
-docker compose exec nginx nginx -s reload
-```
-
-Xem trạng thái và log:
-
-```bash
-docker compose ps
-docker compose logs --tail=30 nginx
-```
-
-Đã kiểm chứng:
-
-- Nginx và app healthy; trang chủ cùng ảnh hoạt động qua proxy.
-- Readiness trả HTTP 200, đường dẫn không tồn tại trả HTTP 404.
-- Cả phản hồi 200 và 404 có đủ bốn security headers.
-- App chỉ tin IP Nginx và không có port binding ra host.
-- 10 POST đăng nhập thiếu CSRF trả 403; lượt thứ 11 trả 429.
-- Đổi X-Forwarded-For giả không vượt được giới hạn đăng nhập.
-- Phản hồi 429 có Retry-After, Cache-Control: no-store
-  và các security headers.
-- GET /login và hai endpoint health vẫn trả HTTP 200.
-- Đăng nhập lại qua Nginx thành công; tải lại trang vẫn giữ phiên.
-- Tải/thay ảnh qua Nginx thành công; ảnh hiển thị trên trang sửa, trang chủ và trang chi tiết.
-
-Phiên bản Nginx đã chạy và kiểm chứng: 1.30.5.
-Compose hiện dùng tag nginx:stable-alpine; tag có thể thay đổi.
-
-Hiện sử dụng HTTP với security headers, chưa cấu hình HTTPS.
-Security headers không mã hóa đường truyền.
-
-### Chạy bản phát triển trong WSL
-
-Mở terminal tại thư mục dự án.
-
-Chọn phiên bản Node.js:
-
-```bash
+git clone --branch feature/ui-refresh-technical-logs https://github.com/hscret7/blog-cms.git
+cd blog-cms
 nvm use
-```
-
-Cài dependency từ lockfile:
-
-```bash
 npm ci
 ```
 
-Trước khi chạy Express, cần có `.env` với các biến bắt buộc
-theo `.env.example` và khởi động MySQL:
+Nếu repository private, cần quyền GitHub. Không chèn access token vào URL/lệnh.
+
+**Làm đầy đủ theo [docs/cai-moi.md](docs/cai-moi.md)**, theo thứ tự:
+
+1. Tạo `.env` từ mẫu, sinh mật khẩu riêng và `SESSION_SECRET` ngẫu nhiên 64 ký tự hex.
+2. Chuẩn bị `uploads/covers`, `secrets` và quyền thư mục.
+3. Khởi động MySQL/phpMyAdmin, chờ healthy.
+4. Chạy **001 → 002 → 003 → 004 → 005 → 006** đúng một lần trên database rỗng.
+5. Tạo user giám sát `blog_exporter`, tệp `secrets/mysql-exporter.cnf` và
+   `secrets/grafana-admin-password`.
+6. Build app, tạo ADMIN bằng CLI; chạy website, metrics và Grafana.
+7. Sinh targets log, bật Loki/Promtail và kiểm chứng.
+
+Không chỉ `cp .env.example .env` rồi chạy toàn bộ stack:
+mẫu chứa placeholder, Compose cần secrets/targets và database cần schema.
+Repo hiện **không có** script `npm run migrate`, `npm run seed`,
+`npm run test:integration` hoặc seed tài khoản/mật khẩu mẫu tự động.
+SQL migration **không idempotent**; DDL MySQL không đảm bảo rollback toàn bộ.
+
+| Migration | Chức năng |
+|---|---|
+| 001 | users, categories, posts và ràng buộc nghiệp vụ |
+| 002 | sessions |
+| 003 | READER, xác minh email, phiên bản phiên và account_tokens |
+| 004 | comments, follows, notifications, audit_events, post_versions |
+| 005 | Trả lời theo nhóm, ẩn thông báo, yêu cầu AUTHOR, danh tính/challenge Google |
+| 006 | reply_to_id, trả lời tiếp đúng đích, backfill câu trả lời cũ |
+
+Database đã có: sao lưu và kiểm tra schema trước khi chỉ chạy migration còn thiếu.
+Bản nâng cấp 006 có hướng dẫn riêng ở [docs/tra-loi-tiep.md](docs/tra-loi-tiep.md).
+Đổi `MYSQL_PASSWORD` trong `.env` không tự đổi mật khẩu MySQL đã khởi tạo.
+
+## 6. Cập nhật và vận hành
+
+Các khối dưới chạy trong **Terminal Ubuntu/WSL**, tại thư mục gốc dự án.
+Chỉ cập nhật sau khi xác nhận nhánh đúng, các thay đổi local đã được lưu và schema
+đã đủ cho mã mới. Không dùng reset/clean để bỏ thay đổi Antigravity.
+
+### Cập nhật code và image app
 
 ```bash
-docker compose up -d --wait --wait-timeout 240 mysql
+(
+  set -e
+  git status --short --branch
+  test -z "$(git status --porcelain)" || {
+    printf 'Có thay đổi local, dừng để xử lý trước.\n'
+    exit 1
+  }
+  git pull --ff-only
+  nvm use
+  npm ci
+  npm test
+  python3 tests/log-targets.test.py
+  git diff --check
+  docker compose config --quiet
+  docker build -t blog-cms-app:local .
+  docker compose up -d --no-build --no-deps --force-recreate \
+    --wait --wait-timeout 240 app
+  docker compose exec -T nginx nginx -s reload
+  python3 scripts/prepare-log-targets.py
+  python3 scripts/verify-central-logs.py
+)
 ```
 
-Khởi động:
+Đây không phải lệnh tự chạy migration. Nếu code yêu cầu schema mới, hoàn tất
+migration phù hợp trước khi recreate app. Refresh nguồn log sau **mỗi lần recreate
+app/nginx/mysql/phpmyadmin**, kể cả khi vẫn dùng cùng service name.
 
-```bash
-
-npm start
-```
-
-Truy cập: http://localhost:18090
-
-Kiểm tra tiến trình:
-
-```bash
-curl -i http://127.0.0.1:18090/health/live
-```
-
-Kết quả mong đợi: HTTP 200 với JSON báo trạng thái `ok`.
-
-Kiểm tra đường dẫn không tồn tại:
-
-```bash
-curl -i http://127.0.0.1:18090/khong-ton-tai
-```
-
-Kết quả mong đợi: HTTP 404.
-
-Dừng ứng dụng bằng Ctrl + C tại terminal đang chạy server.
-
-Endpoint `/health/live` chỉ kiểm tra khả năng phục vụ HTTP,
-chưa kiểm tra kết nối database.
-
-### Chạy MySQL và phpMyAdmin bằng Docker Compose
-
-Cần có tệp `.env` theo mẫu `.env.example`, với hai mật khẩu
-riêng biệt cho tài khoản ứng dụng và tài khoản root.
-
-Kiểm tra cấu hình:
-
-```bash
-docker compose config --quiet
-```
-
-Tải image và khởi động:
-
-```bash
-docker compose pull
-docker compose up -d --wait --wait-timeout 240
-```
-
-Xem trạng thái:
+### Kiểm tra trạng thái
 
 ```bash
 docker compose ps
+docker compose logs --tail=30 app nginx
+curl --max-time 10 -fsS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/live
+curl --max-time 10 -fsS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/ready
 ```
 
-| Thành phần | Địa chỉ |
-| --- | --- |
-| Website phát triển | http://localhost:18090 |
-| MySQL từ WSL | 127.0.0.1:13319 |
-| phpMyAdmin | http://localhost:18091 |
+Liveness chỉ kiểm tra HTTP; readiness kiểm tra MySQL bằng `SELECT 1`,
+không kiểm tra đủ schema hoặc xác nhận mọi chức năng đều tốt.
+Exporter/Promtail không có healthcheck trong Compose; `Up` chưa chứng minh scrape.
 
-Đăng nhập phpMyAdmin bằng tài khoản `blog_app` và mật khẩu
-`MYSQL_PASSWORD` trong `.env`.
+### Kiểm tra Nginx
 
-phpMyAdmin kết nối MySQL qua mạng Docker tại `mysql:3306`.
+Đang chạy: `docker compose exec -T nginx nginx -t`, sau đó mới
+`docker compose exec -T nginx nginx -s reload`.
 
-Dữ liệu MySQL được lưu trong named volume `mysql_data` của dự án.
-
-Các biến khởi tạo MySQL chỉ áp dụng khi thư mục dữ liệu chưa
-chứa database. Sửa `.env` sau khi khởi tạo không tự thay đổi
-mật khẩu đã lưu trong MySQL.
-
-### Khởi tạo cấu trúc database
-
-Sử dụng Docker Engine cài trực tiếp trong Ubuntu WSL.
-Trước khi thao tác, kiểm tra đúng Engine:
+Kiểm tra độc lập, không tranh IP tĩnh với Nginx đang chạy:
 
 ```bash
-docker info --format 'Name={{.Name}} | OS={{.OperatingSystem}}'
+docker run --rm --network none \
+  --mount "type=bind,src=$PWD/infra/nginx/default.conf,dst=/etc/nginx/conf.d/default.conf,readonly" \
+  nginx:stable-alpine nginx -t
 ```
 
-Database core gồm `users`, `categories`, `posts`; migration 003/004 bổ sung tài khoản và cộng đồng.
+Không dùng `docker compose run nginx` khi service hiện hữu đã chiếm IP
+`172.26.0.10`.
 
-Sau khi MySQL healthy, chạy tệp SQL một lần trên database
-chưa có các bảng này:
+### Chạy Express trực tiếp trong WSL để phát triển
+
+Dừng Nginx Compose nếu cần nhường host 18090, đặt `DB_HOST=127.0.0.1`,
+`DB_PORT=13319` và `TRUSTED_PROXY_IP=` trong cấu hình local.
+Giữ MySQL hoạt động, rồi `nvm use`, `npm ci`, `npm run dev`.
+Thay cấu hình local không tự thay environment của container đã tạo.
+
+## 7. Tài khoản, email và đăng nhập Google
+
+**Không có tài khoản demo/mật khẩu mặc định được cam kết trong repo.**
+Không công bố tài khoản thật, hash mật khẩu hoặc thông tin SMTP trong README.
+
+- Tạo ADMIN ban đầu bằng `docker compose run --rm --no-deps app npm run create-admin`
+  sau khi build image và chuẩn bị schema; chạy trong terminal tương tác.
+- Có `npm run create-author` tương tự. ADMIN cũng tạo người dùng từ giao diện.
+- Website: đăng nhập tại http://localhost:18090/login và thao tác bằng menu/tài khoản.
+- Đăng ký công khai luôn tạo READER. Chọn muốn làm tác giả chỉ gửi yêu cầu;
+  ADMIN xét duyệt, không tự cấp AUTHOR hoặc ADMIN.
+- Mật khẩu website: **8–128 ký tự**, có chữ hoa A–Z, chữ thường a–z,
+  chữ số 0–9 và ký tự đặc biệt; không tự trim mật khẩu.
+- phpMyAdmin: dùng `MYSQL_USER`/`MYSQL_PASSWORD` trong `.env`, không dùng root
+  cho nghiệp vụ ứng dụng.
+- Grafana: user khởi tạo `admin`, mật khẩu riêng trong
+  `secrets/grafana-admin-password`. Sửa tệp này không tự đổi mật khẩu đã lưu
+  của một Grafana đã khởi tạo.
+
+### Cấu hình tùy chọn
+
+| Biến | Ý nghĩa |
+|---|---|
+| PUBLIC_BASE_URL | Origin website; HTTP chỉ chấp nhận localhost/127.0.0.1, public phải HTTPS |
+| SMTP_HOST, SMTP_PORT, SMTP_SECURE | SMTP; mặc định port 587, SMTP_SECURE=false sử dụng STARTTLS bắt buộc |
+| SMTP_USER, SMTP_PASSWORD, SMTP_FROM | Xác thực gửi email và địa chỉ gửi |
+| GOOGLE_CLIENT_ID | OAuth Web Client ID của Google Cloud; không phải mật khẩu Gmail |
+| SESSION_SECRET | Khóa ký session, 64 ký tự hex ngẫu nhiên; bắt buộc |
+| DOCKER_LOG_ROOT | Thư mục Docker container logs, mặc định /var/lib/docker/containers |
+| LOKI_HOST_PORT | Cổng Loki host, mặc định 13100 |
+
+SMTP và Google là **hai tích hợp riêng**. Chưa cấu hình SMTP thì đăng ký/xác minh/
+quên mật khẩu chưa hoạt động đầy đủ, nhưng app và tài khoản được cấp qua CLI vẫn
+có thể dùng. Google cần chủ tài khoản cấu hình OAuth origins khớp URL truy cập.
+Backend kiểm tra chữ ký, audience, issuer, expiry và nonce dùng một lần; không
+tự gộp tài khoản theo email. Liên kết/gỡ liên kết có kiểm tra tài khoản hiện hữu.
+Xem [hướng dẫn Google](docs/cap-nhat-tuong-tac-google.md) và
+[hướng dẫn email](docs/cap-nhat-cong-dong.md).
+
+## 8. Kiểm thử và nghiệm thu
+
+Chạy trên host, không giả định runtime image có thư mục tests:
 
 ```bash
-docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' < db/migrations/001_create_core_tables.sql
+nvm use
+npm ci
+npm test
+python3 tests/log-targets.test.py
+npm audit
+git diff --check
 ```
 
-Với cài mới, phải chạy lần lượt **001 → 002 → 003 → 004 → 005 → 006**, rồi mới chạy app/scripts tạo tài khoản. Xem [hướng dẫn cài mới](docs/cai-moi.md). Với database đang có, không chạy lại migration đã áp dụng; các hướng dẫn cập nhật mô tả từng mốc riêng.
+Dockerfile hiện không COPY `tests/`; không dùng
+`docker compose exec app npm test` như hướng dẫn của dự án khác.
 
-Kiểm tra danh sách bảng:
+Kết quả đã ghi nhận tại mốc mã 16/10/2026: **153 test Node và 8 test Python đạt**;
+audit tại mốc đó báo 0 lỗ hổng. Kết quả rà soát nhánh mới xem `docs/ra-soat-nhat-ky-ky-thuat.md`.
+Bộ test bao gồm validation, phân quyền, CSRF, tài khoản/token/Google, ảnh,
+thông báo/trả lời, tìm kiếm và render EJS; nhiều ca DB/SMTP dùng fixture.
+
+Nghiệm thu thật cần kiểm tra thêm:
+
+- CRUD và quyền ADMIN/AUTHOR/READER; chặn truy cập bài của người khác.
+- Đăng nhập, đổi/reset mật khẩu, khóa/mở khóa và thu hồi phiên.
+- SMTP gửi/nhận email thật; đăng nhập/liên kết Google bằng provider thật.
+- Ảnh, bình luận/trả lời tiếp, kiểm duyệt, đích thông báo và phân trang nhiều trang.
+- Desktop/mobile sau lần sửa bố cục mới nhất.
+- Trạng thái database, metrics và log sau recreate.
+
+Chi tiết: [rà soát](docs/ra-soat-du-an.md),
+[UI](docs/kiem-thu-giao-dien.md), [thông báo](docs/thong-bao-binh-luan.md),
+[trả lời tiếp](docs/tra-loi-tiep.md). Không đánh dấu PASS chỉ vì có code hoặc menu.
+
+## 9. Giám sát Prometheus và Grafana
+
+- [Prometheus targets](http://localhost:19090/targets): cấu hình có **4 job**,
+  `prometheus`, `nginx`, `mysql`, `cadvisor`.
+- [Dashboard tổng quan](http://localhost:13000/d/blog-cms-overview).
+- Datasource `Blog CMS Prometheus`, UID `blog-cms-prometheus`.
+- Scrape/evaluation mỗi 15 giây; timeout scrape 5 giây.
+- Prometheus retention 7 ngày hoặc ngưỡng 1GB; không phải quota cứng toàn volume.
+- CPU/RAM app được lấy qua cAdvisor; **chưa có job scrape /metrics của Express**.
+  CPU 100% tương ứng một lõi; RAM dùng working set.
+
+PromQL tham khảo:
+
+```promql
+up{project="blog-cms"}
+```
+
+```promql
+nginx_up{project="blog-cms"}
+```
+
+```promql
+mysql_up{project="blog-cms"}
+```
+
+Tạo lưu lượng website để quan sát tốc độ yêu cầu Nginx:
 
 ```bash
-docker compose exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --execute="SHOW TABLES;"'
+for attempt in $(seq 1 30); do
+  curl --max-time 5 -fsS -o /dev/null http://127.0.0.1:18090/ || break
+done
 ```
 
-Tệp SQL hiện được chạy thủ công; chưa có công cụ theo dõi migration.
-Không chạy lại tệp tạo bảng trên database đã có các bảng này.
+Không dùng healthcheck để tạo minh chứng access log: Nginx chủ động bỏ
+`/health/live` và `/health/ready` khỏi access log.
 
-MySQL, phpMyAdmin và cấu trúc database đã được kiểm chứng.
+## 10. Log tập trung và ba truy vấn LogQL
 
-Ứng dụng Express đã kết nối MySQL bằng thư viện `mysql2`,
-sử dụng connection pool.
+Nguồn log: app, nginx, mysql, phpmyadmin. Promtail chọn đúng Compose project qua
+`runtime/promtail-targets/containers.json`, không dùng Docker socket.
+Loki lưu filesystem, schema TSDB v13, retention 168 giờ.
+Nginx access log là JSON gồm ts/method/path/status/duration/bytes, không ghi query,
+cookie hoặc Authorization. Log app/MySQL không mặc định có cùng cấu trúc JSON.
 
-### Cấu hình kết nối ứng dụng
-
-Khi Express chạy trực tiếp trong WSL, đặt trong `.env`:
-
-```dotenv
-DB_HOST=127.0.0.1
-DB_PORT=13319
-```
-
-Ứng dụng sử dụng `MYSQL_USER`, `MYSQL_PASSWORD` và
-`MYSQL_DATABASE` từ cấu hình môi trường.
-
-### Kiểm tra sức khỏe ứng dụng
-
-| Endpoint | Ý nghĩa |
-| --- | --- |
-| `/health/live` | Kiểm tra server còn phục vụ HTTP |
-| `/health/ready` | Kiểm tra ứng dụng truy vấn được MySQL |
-
-Kiểm tra:
+Sau khi khởi động hoặc recreate nguồn log:
 
 ```bash
-curl -sS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/live
-curl -sS -w '\nHTTP %{http_code}\n' http://127.0.0.1:18090/health/ready
+python3 scripts/prepare-log-targets.py
+python3 scripts/verify-central-logs.py
 ```
 
-Kết quả đã kiểm chứng:
+Script tạo một request 404 có marker và kiểm tra marker đến Loki, sau đó chạy ba
+query. Nếu đổi website/Loki host port, truyền `--website` và `--loki` với origin
+HTTP localhost phù hợp; các URL README mặc định cần cập nhật tương ứng.
 
-- MySQL hoạt động: cả hai endpoint trả HTTP 200.
-- MySQL dừng: liveness trả HTTP 200, readiness trả HTTP 503.
-- MySQL chạy lại: readiness trở về HTTP 200 mà không cần
-  khởi động lại Express.
+Mở [Grafana Explore](http://localhost:13000/explore), chọn **Blog CMS Loki**,
+UID `blog-cms-loki`, khoảng **Last 1 hour**, rồi chạy:
 
-Readiness hiện sử dụng `SELECT 1`; chưa kiểm tra đầy đủ
-cấu trúc bảng hoặc các chức năng nghiệp vụ.
+**1. Log bốn dịch vụ Blog CMS**
 
-### Kiểm tra database đã thực hiện
+```logql
+{project="blog-cms",service=~"app|nginx|mysql|phpmyadmin"}
+```
 
-- Tạo bài nháp với `published_at` bằng NULL: thành công.
-- Xuất bản thiếu thời điểm: bị chặn bởi CHECK constraint.
-- Xuất bản có thời điểm: thành công.
-- Xóa danh mục đang có bài: bị chặn bởi khóa ngoại.
-- Thêm email trùng: bị chặn bởi unique constraint.
-- Rollback: các bản ghi thử không còn tồn tại.
-- Kiểm tra Unicode qua đầu vào không tương tác: tiếng Việt
-  và charset utf8mb4 đúng.
+**2. Lỗi HTTP Nginx 4xx và 5xx**
 
-### Kiểm tra xác thực và phân quyền đã thực hiện
+```logql
+{project="blog-cms",service="nginx"} | json | __error__="" | status >= 400
+```
 
-- Đăng nhập đúng và sai mật khẩu: đăng nhập đúng thông tin thành công và chuyển hướng tới `/account`; nhập sai mật khẩu bị từ chối với HTTP 401 và hiển thị lỗi.
-- Lưu trữ phiên trong MySQL: phiên đăng nhập được lưu chính xác trong bảng `sessions`, mã phiên (session ID) được tái tạo mới khi đăng nhập.
-- Đăng xuất và chặn truy cập: đăng xuất hủy phiên trong MySQL và xóa cookie; truy cập `/account` sau khi đăng xuất bị chặn và chuyển hướng về `/login`.
-- Bảo vệ CSRF: yêu cầu `POST /login` và `POST /logout` thiếu CSRF token (hoặc sai token) bị từ chối với HTTP 403.
-- Phân quyền vai trò: tài khoản vai trò `AUTHOR` truy cập được `/account`, nhưng bị từ chối khi truy cập `/admin` (HTTP 403).
-- Xử lý khóa tài khoản: khi đổi trạng thái tài khoản `AUTHOR` thành `LOCKED`, phiên hiện tại bị từ chối ngay lập tức, bị hủy trong MySQL và chuyển hướng về `/login`; tài khoản bị khóa không thể đăng nhập. Khi tài khoản được mở khóa lại (`ACTIVE`), người dùng phải đăng nhập lại để khởi tạo phiên mới.
-- Hoạt động của rate limiter: 10 yêu cầu `POST /login` đầu tiên thiếu CSRF trả HTTP 403, yêu cầu thứ 11 vượt giới hạn bị chặn với HTTP 429.
-- Tính độc lập của limiter: yêu cầu `GET /login` cùng hai endpoint `/health/live` và `/health/ready` không bị hạn chế và tiếp tục phục vụ với HTTP 200.
+**3. Số dòng log theo dịch vụ trong 10 phút**
 
-### Tạo tài khoản quản trị website
+```logql
+sum by (service) (
+  count_over_time({project="blog-cms",service=~"app|nginx|mysql|phpmyadmin"}[10m])
+)
+```
 
-Sau khi database đã có các bảng nghiệp vụ, chạy:
+Query 3 đếm **dòng log**, không phải số request hoặc số lỗi.
+[Dashboard log](http://localhost:13000/d/blog-cms-logs) được provision riêng.
+Log startup MySQL/phpMyAdmin có thể nằm ngoài Last 1 hour; thử Last 7 days.
+Không có log mới của một service không tự có nghĩa service bị lỗi.
+
+Sinh viên đã cung cấp kết quả marker 404 và cả ba query có dữ liệu ở mốc
+triển khai. Ảnh minh chứng cần lấy trên phiên bản demo cuối.
+Chi tiết: [docs/log-tap-trung.md](docs/log-tap-trung.md).
+
+**Promtail đã EOL**: giữ trong lab để đáp ứng yêu cầu học phần; chuyển Alloy
+nếu vận hành dài hạn. Không mô tả Promtail còn được hỗ trợ tích cực hoặc cam kết
+hoạt động “100%”. Retention không khôi phục log Docker đã bị xoay/xóa trước khi thu.
+
+## 11. Bảo mật và hardening
+
+| Biện pháp | Triển khai hiện tại |
+|---|---|
+| App non-root | Dockerfile USER node, UID/GID 1000 |
+| Hạn chế ghi/quyền | App read_only, tmpfs /tmp, cap_drop ALL, no-new-privileges |
+| Tách mạng | database, proxy, monitoring; app không publish cổng host |
+| Cổng cục bộ | Các port publish trong Compose bind 127.0.0.1 |
+| Mật khẩu | Argon2id; tài khoản và secrets riêng; session_version để thu hồi phiên |
+| Session | MySQL store, HttpOnly, SameSite=Lax, 8 giờ; regenerate khi đăng nhập |
+| CSRF/quyền | POST kiểm tra CSRF; quyền server; transaction kiểm tra actor/khóa hàng |
+| SQL/XSS | Truy vấn tham số hóa, danh sách sort được phép, EJS escape nội dung |
+| Upload | Giới hạn dung lượng/pixel, kiểm tra ảnh thực, UUID, không static uploads |
+| Proxy | App chỉ tin Nginx 172.26.0.10; Nginx ghi đè forwarded headers |
+| Security headers | nosniff; X-Frame-Options DENY; Referrer-Policy; Permissions-Policy |
+| Đăng nhập | POST /login tối đa 10 lượt/15 phút/IP, tính cả thành công/thất bại |
+| Secrets | .env, secrets, uploads, runtime, backups ngoài Git và build context |
+| Log rotation | Docker json-file max-size 10m, max-file 3 |
+
+Giới hạn cần nói rõ:
+
+- HTTP localhost chưa có HTTPS; cookie `Secure=false`. Headers không mã hóa dữ liệu.
+  Muốn công khai ra Internet cần TLS và cấu hình cookie phù hợp.
+- Không có CSP hoặc Nginx `limit_req 30r/s` trong cấu hình hiện tại.
+- **Không phải mọi container đều non-root**: Promtail chạy root để đọc log,
+  cAdvisor privileged và mount host để quan sát metrics.
+- Các mạng bridge chưa đặt `internal: true`; tách mạng không phải cách ly tuyệt đối.
+  MySQL exporter tham gia cả database và monitoring.
+- Promtail mount log root chỉ đọc nhưng vẫn có khả năng đọc thư mục log của
+  container khác; giới hạn project nằm ở discovery/pipeline, không phải sandbox file.
+- User ứng dụng không phải root nhưng còn quyền trong database để migration;
+  chưa tách tài khoản migration/runtime. `blog_exporter` có PROCESS,
+  REPLICATION CLIENT, SELECT toàn server, tối đa 3 kết nối; chỉ dùng giám sát.
+- Rate limit dùng memory của một app instance, mất khi restart, không chia sẻ nhiều replica.
+
+Kiểm tra một số minh chứng mà không in environment/secrets:
 
 ```bash
-npm run create-admin
+docker compose exec -T app node -e 'console.log("UID:", process.getuid())'
+docker inspect "$(docker compose ps -q app)" \
+  --format 'ReadonlyRootfs={{.HostConfig.ReadonlyRootfs}} | CapDrop={{json .HostConfig.CapDrop}} | SecurityOpt={{json .HostConfig.SecurityOpt}} | PortBindings={{json .HostConfig.PortBindings}}'
+curl --max-time 10 -sS -D - -o /dev/null http://127.0.0.1:18090/health/ready
+git ls-files .env secrets uploads runtime backups
 ```
 
-Script hỏi tên hiển thị, email, mật khẩu và xác nhận mật khẩu.
+Lệnh Git cuối mong đợi không có kết quả. Không chụp toàn bộ `docker inspect`,
+`docker compose config` đã render hoặc `.env` vì có thể lộ credentials.
 
-- Email được bỏ khoảng trắng đầu/cuối và chuyển về chữ thường.
-- Mật khẩu có từ 8–128 và đủ 4 nhóm, được nhập ẩn trên terminal.
-- Mật khẩu được băm bằng Argon2id trước khi lưu.
-- Tài khoản được tạo với vai trò ADMIN và trạng thái ACTIVE.
-- Email đã tồn tại sẽ bị từ chối; tài khoản cũ không bị thay đổi.
+## 12. Dữ liệu, sao lưu và dừng an toàn
 
-Tài khoản ADMIN này dùng cho website, khác với tài khoản
-MySQL `blog_app`.
+| Nơi lưu | Dữ liệu |
+|---|---|
+| mysql_data | Bảng nghiệp vụ và session |
+| ./uploads → /app/uploads | Ảnh đại diện WebP |
+| prometheus_data | Metrics |
+| grafana_data | Tài khoản/cấu hình và trạng thái Grafana |
+| loki_data | Log/index Loki |
+| promtail_positions | Vị trí đọc log |
+| .env, secrets/ | Cấu hình và bí mật ngoài Git, cần bảo quản riêng |
 
-### Tạo tài khoản tác giả (AUTHOR)
-
-Để phục vụ kiểm tra phân quyền, chạy:
+**Trước migration hoặc nâng cấp quan trọng**, sao lưu SQL và ảnh ở cùng thời điểm.
+Ví dụ dưới dừng app để tránh ghi nghiệp vụ trong lúc sao lưu; không phải backup
+toàn bộ metrics/Grafana/Loki. Nếu bước nào lỗi, app có thể còn dừng: kiểm tra lỗi
+trước khi tiếp tục, không xóa volume.
 
 ```bash
-npm run create-author
+(
+  set -e
+  umask 077
+  backup_dir="backups/manual-$(date -u +%Y%m%dT%H%M%SZ)"
+  mkdir -p "$backup_dir"
+  docker compose stop app
+  docker compose exec -T mysql sh -c '
+    MYSQL_PWD="$MYSQL_PASSWORD" exec mysqldump \
+      --protocol=TCP --host=127.0.0.1 --user="$MYSQL_USER" \
+      --single-transaction --no-tablespaces --databases "$MYSQL_DATABASE"
+  ' > "$backup_dir/database.sql"
+  test -s "$backup_dir/database.sql"
+  tar -czf "$backup_dir/uploads.tar.gz" uploads
+  gzip -t "$backup_dir/uploads.tar.gz"
+  docker compose up -d --no-build --no-deps --wait --wait-timeout 240 app
+  docker compose exec -T nginx nginx -s reload
+  printf 'Đã tạo backup SQL và ảnh: %s\n' "$backup_dir"
+)
 ```
 
-Script tạo tài khoản với vai trò cố định AUTHOR và trạng thái ACTIVE,
-sử dụng quy trình nhập tương tác và chính sách mật khẩu tương tự
-tài khoản ADMIN.
+Backup không thay thế kiểm thử restore. Khôi phục thử vào **database/Compose project
+cách biệt**, kiểm tra số bảng/bản ghi, đăng nhập và ảnh rồi mới lập quy trình phục
+hồi môi trường thật. Không import dump chứa `--databases` tùy ý vào MySQL đang dùng.
+Secrets cần bản sao bảo mật riêng, không đẩy Git/Grafana hoặc đưa vào báo cáo.
 
-Quy định phân quyền đối với vai trò AUTHOR:
-- Được phép truy cập trang thông tin tài khoản `/account`.
-- Không được phép truy cập khu vực quản trị `/admin` (bị từ chối HTTP 403).
+Dừng rồi chạy lại, giữ container:
 
-### Phiên đăng nhập
+```bash
+docker compose stop
+docker compose start
+```
 
-Đã tích hợp express-session với session store MySQL.
+Gỡ container/network, giữ named volume và bind mount:
 
-- Bảng sessions được tạo bằng migration
-  db/migrations/002_create_sessions_table.sql.
-- SESSION_SECRET được lưu trong .env; không đưa vào Git.
-- Cookie có tên blogcms.sid, bật HttpOnly và SameSite=Lax.
-- Thời hạn cookie là 8 giờ.
-- Hiện chạy HTTP tại máy phát triển nên Secure chưa bật.
-- Không lưu phiên mới chưa có dữ liệu.
-- Các endpoint health được đặt trước middleware session.
+```bash
+docker compose down
+```
 
-Đã kiểm chứng session store ghi, đọc và xóa dữ liệu trong MySQL.
-Cookie phiên `blogcms.sid` được tạo khi đăng nhập thành công và bị xóa khi đăng xuất.
+**Không dùng `docker compose down -v` hoặc prune volumes khi cần giữ dữ liệu.**
+Sau `down`, container nguồn log bị tạo lại khi `up`: khởi động các service nguồn,
+chạy lại `prepare-log-targets.py`, rồi kiểm chứng log theo tài liệu.
+Không coi dữ liệu tồn tại ngoài container là đã có backup an toàn.
 
-Khi nhận SIGINT hoặc SIGTERM, ứng dụng ngừng nhận yêu cầu,
-đợi các yêu cầu đang chạy hoàn tất, đóng session store và
-connection pool. Thời gian chờ tối đa là 10 giây.
+## 13. Xử lý sự cố thường gặp
 
-### Giới hạn thử đăng nhập (Rate Limiting)
+| Hiện tượng | Kiểm tra / xử lý |
+|---|---|
+| Cổng đã dùng | Xem `docker compose ps`, `ss -ltn`; đối chiếu bảng cổng, không dừng stack khác tùy ý |
+| Bind mount không tồn tại / permission denied | Chuẩn bị uploads/secrets/targets và UID 1000 theo hướng dẫn cài mới |
+| App lỗi thiếu bảng/cột | Kiểm tra migration, đặc biệt 006; readiness có thể vẫn 200; không chạy lại toàn bộ SQL |
+| Nginx trùng IP khi kiểm tra | Dùng exec nginx -t hoặc docker run --network none, không compose run nginx |
+| HTTP 502 / health đang phục hồi | Kiểm tra app healthy, nginx -t, reload Nginx; xem log app/nginx |
+| Đăng nhập 429 | Chờ Retry-After; bộ đếm theo IP; không restart liên tục để né limiter |
+| Đăng nhập/ảnh/CSRF dùng phiên cũ | Tải lại trang, đăng nhập lại; kiểm tra phiên bị thu hồi, không bỏ CSRF |
+| Google chưa cấu hình hoặc không phản hồi | Client ID/origins phải khớp; kiểm tra callback JS và app log, không cung cấp mật khẩu Gmail cho website |
+| Email không đến | Kiểm tra SMTP/STARTTLS, địa chỉ gửi và hộp spam; không in SMTP_PASSWORD |
+| Loki không thấy log sau recreate | Sinh lại targets, kiểm tra quyền đọc log/Docker Root Dir, chạy verify script |
+| Dashboard log rỗng | Chọn Blog CMS Loki, đúng thời gian và project/service; khác datasource Prometheus |
+| Grafana đổi secret nhưng không đổi password | Secret khởi tạo không tự cập nhật DB Grafana; dùng quy trình đổi/reset của Grafana |
+| Chạy npm test trong runtime image thất bại | Tests không có trong image; chạy npm test trên checkout host |
 
-Đã triển khai giới hạn thử đăng nhập cho tuyến `POST /login` bằng `express-rate-limit`:
+## 14. Hiện trạng, giới hạn và tài liệu
 
-- Áp dụng tối đa 10 yêu cầu trong 15 phút theo địa chỉ IP.
-- Tính cả lượt đăng nhập thành công và thất bại.
-- Middleware rate limit được đặt trước `parseForm`, `requireCsrf` và `login`
-  để các yêu cầu bị chặn không thực hiện kiểm tra form hoặc xác minh Argon2.
-- Khi vượt giới hạn, hệ thống trả về HTTP 429 kèm thông báo:
-  "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau."
-  Phản hồi có các header `Retry-After` và `Cache-Control: no-store`.
-- Chỉ áp dụng đối với `POST /login`. Không hạn chế `GET /login`, `/health/live`,
-  `/health/ready`, `/account` hoặc `/logout`.
-- Sử dụng `MemoryStore` cho phiên bản một tiến trình hiện tại. Bộ đếm sẽ bị mất
-  khi khởi động lại ứng dụng và không được chia sẻ giữa nhiều tiến trình hoặc container.
-- Compose cấu hình app chỉ tin proxy IPv4 `172.26.0.10`. Nginx ghi đè `X-Forwarded-For` bằng địa chỉ kết nối; không dùng `trust proxy = true`. Khi chạy trực tiếp trong WSL, để `TRUSTED_PROXY_IP` trống.
+Các mốc commit kỹ thuật có ý nghĩa:
 
-### Quản lý danh mục (ADMIN)
+| Mốc | Commit |
+|---|---|
+| Nginx reverse proxy và security headers | `9dadc5c` |
+| Prometheus/Grafana và exporter/cAdvisor | `15c40b4` |
+| Loki/Promtail và LogQL | `c7f9586` |
+| Thu hồi phiên, kiểm thử hồi quy và cài mới | `085deb2` |
+| Sửa luồng mở/duyệt thông báo và README | `1370b2e` |
+| Trả lời tiếp vào mọi câu trả lời, migration 006 | `0655163` |
 
-Đã triển khai các chức năng quản lý danh mục theo cấu trúc repository → service → controller → routes:
+Không coi PR mở là đã merge. Khi nộp bài cần chỉ rõ nhánh/commit chạy demo và bảo
+đảm mọi thay đổi local cần bàn giao đã commit/push. Repo hiện thuộc tài khoản
+`hscret7`; thông tin MSV trên README không tự thay tên tài khoản GitHub theo
+yêu cầu riêng của giảng viên.
 
-- `GET /admin/categories`: Danh sách danh mục, thứ tự ID giảm dần.
-- `GET /admin/categories/new`: Giao diện biểu mẫu thêm danh mục mới.
-- `POST /admin/categories`: Tạo danh mục mới.
-- `GET /admin/categories/:id/edit`: Giao diện chỉnh sửa danh mục theo ID.
-- `POST /admin/categories/:id/update`: Cập nhật danh mục theo ID.
-- `POST /admin/categories/:id/delete`: Xóa danh mục theo ID (có xác nhận trên giao diện).
+Các phần **chưa hoàn thiện hoặc chưa có đủ minh chứng**: cảnh báo tự động;
+CI; migration runner; backup/restore tự động; cleanup token/challenge; đối soát
+ảnh còn sót; kiểm thử tải/HA; kiểm chứng SMTP và nghiệm thu lại bố cục/nhật ký kỹ thuật trên máy thật.
+Migration 006 và luồng trả lời đã được sinh viên ghi nhận kiểm tra trong
+`docs/tra-loi-tiep.md`; không chạy lại migration chỉ vì cập nhật giao diện. Không sửa các mục này thành PASS nếu chưa kiểm tra.
 
-Bảo vệ và quy tắc nghiệp vụ:
-- Toàn bộ route quản lý danh mục yêu cầu đăng nhập với vai trò ADMIN (`requireAuth`, `requireRole('ADMIN')`).
-- Mọi thao tác POST đều yêu cầu phân tích form (`parseForm`) và kiểm tra CSRF token (`requireCsrf`).
-- Thiết lập `Cache-Control: no-store` cho toàn bộ khu vực quản trị.
-- Ràng buộc dữ liệu: tên (1–100 code points), slug duy nhất (chữ thường, số, phân cách bằng dấu gạch ngang, tối đa 150 ký tự), mô tả (tùy chọn, tối đa 500 code points, để trống lưu NULL).
-- Bắt lỗi trùng slug trả HTTP 409, dữ liệu form không hợp lệ trả HTTP 422, ID sai định dạng trả HTTP 400, không tìm thấy danh mục trả HTTP 404.
-- Khóa ngoại: danh mục đang có bài viết liên kết sẽ bị chặn xóa bởi ràng buộc RESTRICT trong database, bắt lỗi `ER_ROW_IS_REFERENCED_2` để trả HTTP 409 kèm thông báo tiếng Việt rõ ràng.
+Tài liệu chi tiết:
 
-### Ảnh đại diện bài viết
+- [Cài mới](docs/cai-moi.md).
+- [Cập nhật tài khoản và cộng đồng 003/004](docs/cap-nhat-cong-dong.md).
+- [Google và tương tác 005](docs/cap-nhat-tuong-tac-google.md).
+- [Trả lời tiếp 006](docs/tra-loi-tiep.md).
+- [Quy tắc thông báo/bình luận](docs/thong-bao-binh-luan.md).
+- [Log tập trung và LogQL](docs/log-tap-trung.md).
+- [Kiểm tra giao diện](docs/kiem-thu-giao-dien.md).
+- [Kết quả rà soát kỹ thuật](docs/ra-soat-du-an.md).
+- [Phạm vi](docs/pham-vi.md), [thiết kế dữ liệu](docs/thiet-ke-du-lieu.md).
 
-Tải ảnh tại trang sửa bài, bằng biểu mẫu riêng với nội dung bài viết.
-
-- Nhận một ảnh JPEG, PNG hoặc WebP, tối đa 5 MiB.
-- Kiểm tra định dạng thực bằng Sharp; không chỉ dựa vào tên tệp
-  hoặc MIME do trình duyệt gửi.
-- Giới hạn đầu vào 20 triệu pixel; từ chối ảnh động/nhiều trang.
-- Chuyển sang WebP, giữ tỷ lệ và thu nhỏ trong khung 1600 × 1600.
-- Lưu tại uploads/covers với tên UUID; database lưu tên trong cover_path.
-- Không đưa tệp uploads vào Git.
-- Ảnh được trả qua GET /media/posts/:id/cover, không mở uploads
-  bằng express.static.
-- Khách xem được ảnh bài đã xuất bản.
-- Với bài nháp, route yêu cầu ADMIN hoặc tác giả đang hoạt động.
-- Upload và gỡ ảnh yêu cầu đăng nhập, quyền trên bài và CSRF.
-- Thay, gỡ ảnh và xóa bài sử dụng transaction, khóa hàng bài viết.
-- Dọn ảnh cũ sau khi database commit.
-
-Đã kiểm chứng:
-
-- Tải ảnh, chuyển thành WebP và hiển thị trên trang sửa.
-- Thay ảnh cập nhật tên mới và xóa tệp cũ.
-- Gỡ ảnh đặt cover_path thành NULL và xóa tệp.
-- Xóa bài thử có ảnh đồng thời dọn tệp ảnh.
-- Khách nhận ảnh khi bài xuất bản, bị từ chối khi bài về nháp.
-- AUTHOR khác bị chặn thay/gỡ ảnh của người khác.
-- Upload thiếu CSRF trả 403; dữ liệu giả ảnh hoặc thiếu tệp trả 422.
-- Tệp vượt 5 MiB trả 413; gỡ ảnh thiếu CSRF trả 403.
-- Hiển thị ảnh trên trang chủ và trang chi tiết công khai.
-
-Database và filesystem không dùng chung transaction.
-Nếu dọn tệp cũ thất bại, thao tác database đã commit vẫn được giữ; ứng dụng ghi log và báo cần dọn tệp còn sót.
-Nếu kết quả commit không chắc chắn, giữ tệp mới để tránh xóa ảnh có thể đang được database tham chiếu.
-
-Chưa có công cụ tự động đối soát tệp còn sót.
-Chưa kiểm thử riêng ảnh động/nhiều trang, hướng EXIF
-hoặc các tình huống lỗi ghi tệp và commit không chắc chắn.
-
-### Giám sát hệ thống
-
-Các thành phần:
-
-- Prometheus v3.15.0: thu thập metrics mỗi 15 giây.
-- Nginx exporter: image tag 1.5.1.
-- MySQL exporter v0.20.0: sử dụng tài khoản giám sát riêng.
-- cAdvisor v0.60.6: thu thập CPU và RAM container.
-- Grafana OSS 13.2.3: hiển thị dashboard.
-
-Địa chỉ:
-
-- Prometheus: http://localhost:19090
-- Grafana: http://localhost:13000
-- Dashboard: http://localhost:13000/d/blog-cms-overview
-
-Prometheus lưu dữ liệu trong volume prometheus_data.
-Cấu hình retention là 7 ngày hoặc ngưỡng kích thước 1GB;
-đây không phải giới hạn cứng cho toàn bộ dung lượng volume.
-
-Grafana lưu dữ liệu trong volume grafana_data.
-Datasource và dashboard được provision từ infra/grafana.
-
-Thông tin đăng nhập riêng được lưu trong secrets/,
-không đưa vào Git hoặc Docker build context.
-Mật khẩu Grafana trong tệp được dùng khi khởi tạo quản trị;
-sửa tệp không tự thay đổi mật khẩu đã lưu trong database Grafana.
-
-Tài khoản blog_exporter có PROCESS, REPLICATION CLIENT,
-SELECT trên toàn server và tối đa 3 kết nối.
-Tài khoản này chỉ dành cho giám sát, không dùng cho ứng dụng.
-
-Prometheus chỉ lưu metrics cAdvisor có nhãn Compose
-project bằng blog-cms. cAdvisor vẫn quan sát container
-trên host, cần quyền privileged và các mount host;
-không tính cAdvisor là minh chứng hardening của ứng dụng.
-
-Đã kiểm chứng:
-
-- Bốn job prometheus, nginx, mysql, cadvisor đều up = 1.
-- nginx_up và mysql_up đều bằng 1.
-- CPU và RAM có dữ liệu của các service Blog CMS.
-- Grafana healthy, API health trả HTTP 200.
-- Dashboard gồm 8 panel có dữ liệu.
-- Tạo 30 yêu cầu website và quan sát tốc độ yêu cầu Nginx tăng.
-
-CPU 100% tương ứng một lõi CPU.
-RAM sử dụng chỉ số working set.
-Các bộ đếm Nginx và MySQL bao gồm lưu lượng giám sát.
-
-Chưa cấu hình cảnh báo tự động.
-## Giao diện và điều hướng
-
-Giao diện responsive dùng CSS nội bộ tại `public/css/site.css`.
-Trang chủ có bộ lọc, thẻ bài viết và phân trang; trang chi tiết giữ
-nội dung văn bản đã escape. Các trang tài khoản và quản lý dùng chung
-header/footer, biểu mẫu và bảng có thể cuộn trên màn hình nhỏ.
-
-Từ trang chủ, bấm **Đăng nhập** rồi dùng menu hoặc các thẻ chức năng
-trên trang tài khoản. AUTHOR có mục Bài viết; ADMIN có thêm Danh mục,
-Người dùng và Quản trị. Nút **Sửa / ảnh** mở cả chỉnh sửa nội dung và
-quản lý ảnh. Nút **Xem bài** chỉ xuất hiện cho bài đã xuất bản.
-Đăng xuất nằm trên trang tài khoản, truy cập bằng tên tài khoản trên menu.
-Các route vẫn kiểm tra quyền trên server và CSRF cho thao tác POST.
-
-Express chỉ phục vụ `/css` và `/js` trước session. Ảnh bài viết tiếp tục
-được trả qua `/media/posts/:id/cover` có kiểm tra quyền.
-Không có CDN; phần email bổ sung Nodemailer 10.1.0, được khóa phiên bản.
-
-Kiểm tra tự động tất cả các bộ test bằng `node --test tests/*.test.js`.
-Hướng dẫn cập nhật Docker và kiểm tra thao tác bằng nút/menu:
-[Kiểm tra giao diện](docs/kiem-thu-giao-dien.md).
-
-## Tài khoản độc giả và cộng đồng
-
-- Đăng ký READER, xác minh email, quên/đặt lại mật khẩu bằng liên kết một lần.
-- Hồ sơ sửa tên/email; đổi email yêu cầu mật khẩu và xác minh lại.
-- Đổi/reset mật khẩu tăng session_version để vô hiệu hóa phiên cũ.
-- Có thể trả lời bình luận hoặc bất kỳ câu trả lời nào; mỗi câu lưu đích trả lời và gom trong cùng cuộc trao đổi. Độc giả và AUTHOR trên bài người khác gửi/sửa thành PENDING. ADMIN và AUTHOR trên bài của mình được hiển thị ngay; nội dung không đổi không gửi lại thông báo.
-- ADMIN duyệt/ẩn/xóa; công khai chỉ APPROVED trên bài PUBLISHED, phân trang 10 bình luận gốc hoặc 10 câu trả lời/trang.
-- Thông báo phân biệt sự kiện đã xảy ra và trạng thái bình luận hiện tại; mở qua nút có CSRF để đánh dấu đã đọc; việc duyệt cập nhật đã đọc cho các thông báo kiểm duyệt liên quan.
-- Theo dõi danh mục, nhận thông báo trong website; đánh dấu đã đọc/tất cả.
-- Quản lý có tìm kiếm, bộ lọc, sắp xếp và phân trang.
-- Nhật ký ADMIN: phân tách rõ hai khu vực **Nhật ký hoạt động** (`/admin/activity` - lịch sử thao tác nghiệp vụ) và **Nhật ký kỹ thuật** (`/admin/system-logs` - tra cứu log hệ thống App, Nginx, MySQL qua Loki với bộ lọc dịch vụ, thời gian, từ khóa và nhóm lỗi); lịch sử nội dung bài chỉ để xem và kiểm tra quyền theo bài.
-- Các thao tác ghi nhật ký dùng cùng transaction với thay đổi nghiệp vụ.
-
-Bộ test hiện tại: 160 Node + 8 Python đạt; npm audit báo 0 lỗ hổng.
-Database migrations 003–006 đã được sinh viên cung cấp kết quả chạy thành công trên MySQL thật (`missing_reply_target = 0`); luồng trả lời tiếp (nhận thông báo đúng người sau duyệt, anchor và tombstone) đã được xác nhận PASS trên trình duyệt thật. Google đăng nhập và log pipeline đã xác nhận trên WSL ở các mốc trước. SMTP/email thật vẫn cần nghiệm thu riêng.
-Kết quả Chromium với fixture ở mốc giao diện trước đây không thay thế kiểm tra UI bản sửa hiện tại hoặc CRUD trên MySQL thật.
-Hướng dẫn thao tác và trạng thái từng phần: [Cập nhật cộng đồng](docs/cap-nhat-cong-dong.md) và [Trả lời tiếp](docs/tra-loi-tiep.md).
-
-## Cấu hình và dữ liệu
-
-Không đưa mật khẩu, file môi trường thật, khóa riêng, log runtime hoặc dữ liệu database vào repository.
-
-
-### Commit 3 — Log tập trung Loki + Promtail
-
-Xem [hướng dẫn đầy đủ](docs/log-tap-trung.md): chọn nguồn log đúng Compose,
-kiểm tra cấu hình, chạy Loki/Promtail, mở Grafana và demo ba query LogQL.
-
-- Loki: localhost:13100 → container 3100, retention 7 ngày, volume riêng.
-- Promtail: đọc log app/nginx/mysql/phpmyadmin qua mount chỉ đọc, không Docker socket.
-- Grafana datasource `Blog CMS Loki`, dashboard UID `blog-cms-logs`.
-- Chạy `python3 scripts/prepare-log-targets.py` trước khi bật Promtail và sau
-  mỗi lần recreate nguồn log; targets runtime không commit.
-- Chạy `python3 scripts/verify-central-logs.py` để xác nhận request 404 vừa
-  tạo và ba query có kết quả thật; không báo hoàn tất nếu script FAIL.
-- Promtail EOL; dùng cho yêu cầu môn học local, chuyển Alloy khi vận hành dài hạn.
-- Đã kiểm tra độc lập bằng native binaries và log fixture, 8 test chọn nguồn
-  log đạt. Sinh viên đã cung cấp kết quả request 404 qua Nginx→Promtail→Loki và ba query có dữ liệu trên máy thật. Ảnh dashboard/Explore vẫn cần lưu cho báo cáo.
-- Promtail root để đọc log và cAdvisor privileged là ngoại lệ hardening; không
-  tuyên bố mọi dịch vụ đều non-root hoặc cách ly tuyệt đối.
+Báo cáo môn học cần bìa đúng thông tin sinh viên, tối thiểu 10 trang và ảnh minh
+chứng GitHub/Compose, website/DB tool, Nginx, Grafana/Prometheus, ba LogQL và ít
+nhất 3–4 biện pháp hardening. Các tài liệu mô tả mốc cũ không thay thế kết quả
+nghiệm thu của phiên bản demo cuối.
 

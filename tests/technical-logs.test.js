@@ -127,37 +127,34 @@ test('technicalLogService.fetchLogs: Xử lý lỗi kết nối Loki (504/timeou
 
   const result = await service.fetchLogs();
   assert.equal(result.success, false);
-  assert.equal(result.status, 504);
-  assert.ok(result.message.includes('Không thể kết nối') || result.message.includes('Hết thời gian'));
+  assert.equal(result.status, 502);
+  assert.ok(result.message.includes('Không thể đọc') || result.message.includes('Hết thời gian'));
   assert.deepEqual(result.entries, []);
 });
 
 test('Phân quyền /admin/system-logs: ADMIN được vào, AUTHOR/READER/Khách bị từ chối', async (t) => {
-  const routes = require('../src/routes/technical-log-routes');
-  const app = express();
-
+  const { load } = require('./helpers/load-module');
   let currentUser = null;
+  let calls = 0;
+  const auth = load('src/middlewares/auth.js', {
+    '../repositories/user-repository': { findById: async () => currentUser }
+  });
+  const service = createTechnicalLogService();
+  service.fetchLogs = async () => {
+    calls++;
+    return { success: true, status: 200, entries: [], params: sanitizeParams({}) };
+  };
+  const routes = load('src/routes/technical-log-routes.js', {
+    '../middlewares/auth': auth,
+    '../controllers/technical-log-controller': createTechnicalLogController(service)
+  });
+  const app = express();
   app.use((req, res, next) => {
-    if (currentUser) {
-      req.session = { userId: currentUser.id, authVersion: 0 };
-    } else {
-      req.session = null;
-    }
+    req.session = currentUser ? { userId: currentUser.id, authVersion: 0 } : null;
     next();
   });
   app.set('view engine', 'ejs');
   app.set('views', require('node:path').resolve(__dirname, '../views'));
-
-  // Stub pool.execute so findById returns currentUser without touching real database
-  const pool = require('../src/config/database');
-  const originalExecute = pool.execute;
-  pool.execute = async () => {
-    if (currentUser) {
-      return [[currentUser]];
-    }
-    return [[]];
-  };
-  t.after(() => { pool.execute = originalExecute; });
 
   app.use(routes);
 
@@ -179,6 +176,12 @@ test('Phân quyền /admin/system-logs: ADMIN được vào, AUTHOR/READER/Khác
   currentUser = { id: 4, role: 'AUTHOR', status: 'ACTIVE', session_version: 0 };
   const authorRes = await fetch(base);
   assert.equal(authorRes.status, 403);
+  assert.equal(calls, 0);
+  currentUser = { id: 3, name: 'Admin', role: 'ADMIN', status: 'ACTIVE', session_version: 0 };
+  const adminRes = await fetch(base);
+  assert.equal(adminRes.status, 200);
+  assert.equal(adminRes.headers.get('cache-control'), 'no-store');
+  assert.equal(calls, 1);
 });
 
 test('Trang system-logs escape nội dung log chứa mã HTML/XSS nguy hiểm', async () => {
@@ -215,4 +218,46 @@ test('Trang system-logs escape nội dung log chứa mã HTML/XSS nguy hiểm', 
   assert.ok(!html.includes('<script>alert("xss")</script>'));
   assert.ok(!html.includes('<img src=x onerror=alert(1)>'));
   assert.ok(html.includes('&lt;script&gt;alert('));
+});
+
+test('Loki: deadline bao gồm body chậm sau HTTP headers', async (t) => {
+  const server = require('node:http').createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.write('{');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const service = createTechnicalLogService({ lokiUrl: `http://127.0.0.1:${server.address().port}`, timeoutMs: 100 });
+  const result = await service.fetchLogs();
+  assert.equal(result.status, 504);
+  assert.equal(result.success, false);
+});
+
+test('Loki: từ chối JSON sai schema, body quá lớn và không chuyển lỗi nội bộ ra UI', async (t) => {
+  let body = JSON.stringify({ status: 'error', error: 'private detail' });
+  let status = 200;
+  const server = require('node:http').createServer((req, res) => {
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(body);
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const service = createTechnicalLogService({ lokiUrl: `http://127.0.0.1:${server.address().port}` });
+  for (const variant of ['schema', 'size', 'http']) {
+    if (variant === 'size') body = 'x'.repeat(2 * 1024 * 1024 + 1);
+    if (variant === 'http') { status = 500; body = 'private detail'; }
+    const result = await service.fetchLogs();
+    assert.equal(result.status, 502, variant);
+    assert.equal(result.success, false);
+    assert.doesNotMatch(result.message, /private detail/);
+  }
+});
+
+test('Controller giữ mã lỗi Loki và render thông báo thay vì HTTP 200', async () => {
+  const service = createTechnicalLogService();
+  service.fetchLogs = async () => ({ success: false, status: 504, entries: [], params: sanitizeParams({}), message: 'Timeout' });
+  const res = { set() {}, status(code) { this.code = code; return this; }, render(view, data) { this.data = data; } };
+  await createTechnicalLogController(service).showLogs({ query: {}, user: { role: 'ADMIN' } }, res);
+  assert.equal(res.code, 504);
+  assert.equal(res.data.error, 'Timeout');
 });

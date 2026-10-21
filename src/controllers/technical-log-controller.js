@@ -6,7 +6,7 @@ function createTechnicalLogController(service = defaultService) {
       res.set('Cache-Control', 'no-store');
       const result = await service.fetchLogs(req.query);
 
-      return res.render('admin/system-logs', {
+      return res.status(result.status).render('admin/system-logs', {
         user: req.user,
         logs: result.entries,
         total: result.entries.length,
